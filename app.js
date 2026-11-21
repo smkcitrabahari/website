@@ -1,29 +1,20 @@
-// Penyimpanan cache memori lokal agar filter cepat tanpa query berulang
-let cacheSiswa = [];
-let cacheGuru = [];
-let cacheAbsensi = [];
-let cacheTindakLanjut = [];
-let cacheJadwalUjian = [];
-let cacheHasilUjian = [];
-let cacheMapel = [];
+let cacheBerita = [];
+let cacheGuruPublik = [];
+let activeKategoriBerita = 'Semua';
+let redaksiAdmin = null;
 
-// Inisialisasi saat halaman dimuat
 document.addEventListener('DOMContentLoaded', async () => {
-    registerServiceWorker();
-    await loadPengaturanUmum();
-
-    if (checkExistingSession()) {
-        initMainApplication();
-    }
-});
-
-function registerServiceWorker() {
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('sw.js').catch(() => {});
     }
+    checkRedaksiSession();
+    await loadAllPublicContent();
+});
+
+function toggleMobileNav() {
+    document.getElementById('nav-links').classList.toggle('open');
 }
 
-// UI Helpers
 function showLoader(text = 'Memuat data...') {
     document.getElementById('loader-text').textContent = text;
     document.getElementById('global-loader').classList.remove('hidden');
@@ -33,528 +24,317 @@ function hideLoader() {
     document.getElementById('global-loader').classList.add('hidden');
 }
 
-function showToast(message, type = 'info') {
-    const container = document.getElementById('toast-container');
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.textContent = message;
-    container.appendChild(toast);
-    setTimeout(() => toast.remove(), 3500);
+function showToast(msg, type = 'info') {
+    const c = document.getElementById('toast-container');
+    const t = document.createElement('div');
+    t.className = `toast ${type}`;
+    t.textContent = msg;
+    c.appendChild(t);
+    setTimeout(() => t.remove(), 3500);
 }
 
-// Ambil pengaturan nama sekolah sebelum login
-async function loadPengaturanUmum() {
+function closeModal(id) {
+    document.getElementById(id).classList.add('hidden');
+}
+
+// ================= MUAT SELURUH KONTEN PUBLIK =================
+async function loadAllPublicContent() {
     try {
-        const { data } = await db.from('pengaturan').select('*');
-        if (data && data.length > 0) {
-            data.forEach(item => {
-                AppState.pengaturan[item.kunci] = item.nilai;
-            });
-
-            const namaSekolah = AppState.pengaturan['nama_sekolah'] ||
-                                AppState.pengaturan['NAMA_SEKOLAH'] ||
-                                'Sistem Sekolah Terpadu';
-            document.getElementById('login-school-name').textContent = namaSekolah;
-            document.getElementById('header-school-title').textContent = namaSekolah;
-            document.title = `SST - ${namaSekolah}`;
-        }
-    } catch (e) {
-        console.warn('Pengaturan sekolah belum dimuat:', e.message);
-    }
-}
-
-// Masuk ke Dashboard Utama setelah Login
-async function initMainApplication() {
-    document.getElementById('login-screen').classList.add('hidden');
-    document.getElementById('main-app').classList.remove('hidden');
-
-    // Set info user di header & banner
-    const u = AppState.user;
-    document.getElementById('header-user-info').textContent = `${u.nama} (${AppState.role.toUpperCase()})`;
-    document.getElementById('welcome-user-name').textContent = `Halo, ${u.nama}`;
-    document.getElementById('welcome-role-desc').textContent = u.jabatan || 'Sistem Informasi Sekolah Terpadu';
-
-    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    document.getElementById('today-date-label').textContent = new Date().toLocaleDateString('id-ID', options);
-
-    // Atur hak akses tampilan tombol berdasarkan role
-    applyRolePermissions();
-
-    // Set default tanggal hari ini pada filter absensi
-    const todayISO = new Date().toISOString().split('T')[0];
-    document.getElementById('filter-absensi-tanggal').value = todayISO;
-
-    await refreshAllData();
-}
-
-function applyRolePermissions() {
-    const isAdmin = AppState.role === 'admin';
-    const isStaff = AppState.role === 'admin' || AppState.role === 'guru';
-
-    document.querySelectorAll('.admin-only').forEach(el => {
-        el.classList.toggle('hidden', !isAdmin);
-    });
-    document.querySelectorAll('.staff-only').forEach(el => {
-        el.classList.toggle('hidden', !isStaff);
-    });
-}
-
-// Muat seluruh data utama dari Supabase
-async function refreshAllData() {
-    showLoader('Menyinkronkan database sekolah...');
-    try {
-        await Promise.all([
-            loadSiswa(),
-            loadGuru(),
-            loadMapel(),
-            loadAbsensiHarian(),
-            loadTindakLanjut(),
-            loadUjianData(),
-            loadSistemSettings()
+        const [resPengaturan, resSiswa, resGuru, resMapel, resLibur] = await Promise.all([
+            db.from('pengaturan').select('*'),
+            db.from('siswa').select('ID_SISWA, KELAS, STATUS'),
+            db.from('guru').select('nama_guru, jabatan, mapel_diampu, status_kepegawaian, status').order('nama_guru', { ascending: true }),
+            db.from('mapel').select('id'),
+            db.from('hari_libur').select('*').order('TANGGAL', { ascending: true })
         ]);
-        updateDashboardStats();
+
+        // 1. Pengaturan Identitas & WhatsApp
+        const settings = {};
+        (resPengaturan.data || []).forEach(p => { settings[p.kunci] = p.nilai; });
+
+        const namaSekolah = settings['nama_sekolah'] || settings['NAMA_SEKOLAH'] || 'Portal Resmi Sekolah';
+        const alamatSekolah = settings['alamat_sekolah'] || settings['ALAMAT_SEKOLAH'] || 'Indonesia';
+        const waRaw = (settings['wa_sekolah'] || '6285298875399').replace(/[^0-9]/g, '');
+        const waNumber = waRaw.startsWith('0') ? '62' + waRaw.slice(1) : waRaw;
+        const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent('Halo Admin ' + namaSekolah + ', saya ingin menanyakan informasi sekolah.')}`;
+
+        document.title = namaSekolah;
+        document.getElementById('pub-nav-title').textContent = namaSekolah;
+        document.getElementById('pub-hero-title').textContent = `Selamat Datang di ${namaSekolah}`;
+        document.getElementById('pub-footer-text').textContent = `© ${new Date().getFullYear()} ${namaSekolah}. Hak Cipta Dilindungi.`;
+        document.getElementById('contact-alamat').textContent = alamatSekolah;
+        document.getElementById('contact-wa-text').textContent = `+${waNumber}`;
+
+        // Pasang link WA di Hero, Bagian Kontak, dan Tombol Mengambang
+        ['hero-wa-btn', 'section-wa-btn', 'floating-wa-btn'].forEach(btnId => {
+            const el = document.getElementById(btnId);
+            if (el) el.href = waLink;
+        });
+
+        // Render Identitas Sekolah (kecuali kunci teknis)
+        const idList = document.getElementById('pub-identitas-list');
+        const publicSettings = (resPengaturan.data || []).filter(p => !p.kunci.toLowerCase().includes('password') && !p.kunci.toLowerCase().includes('token'));
+        idList.innerHTML = publicSettings.length
+            ? publicSettings.map(p => `
+                <div class="kv-row">
+                    <span class="kv-key">${p.kunci.replace(/_/g, ' ')}</span>
+                    <span class="kv-val">${p.nilai || '-'}</span>
+                </div>
+            `).join('')
+            : '<p class="text-muted text-sm">Profil sekolah belum diatur.</p>';
+
+        // 2. Statistik
+        const siswaAktif = (resSiswa.data || []).filter(s => !s.STATUS || s.STATUS.toUpperCase() === 'AKTIF');
+        const guruAktif = (resGuru.data || []).filter(g => !g.status || g.status.toLowerCase() === 'aktif');
+        const rombelCount = new Set(siswaAktif.map(s => s.KELAS).filter(Boolean)).size;
+
+        document.getElementById('pub-stat-siswa').textContent = siswaAktif.length;
+        document.getElementById('pub-stat-guru').textContent = guruAktif.length;
+        document.getElementById('pub-stat-mapel').textContent = (resMapel.data || []).length;
+        document.getElementById('pub-stat-kelas').textContent = rombelCount;
+
+        // 3. Direktori Pendidik (Aman tanpa No HP / Password)
+        cacheGuruPublik = guruAktif;
+        renderPublikGuru();
+
+        // 4. Kalender Libur
+        const liburList = resLibur.data || [];
+        document.getElementById('pub-libur-list').innerHTML = liburList.length
+            ? liburList.map(l => `
+                <div class="list-item-card">
+                    <strong>${l.KETERANGAN_LIBUR}</strong>
+                    <span class="badge badge-danger">${l.TANGGAL}</span>
+                </div>
+            `).join('')
+            : '<p class="text-muted text-sm">Belum ada jadwal hari libur tercatat.</p>';
+
+        // 5. Berita & Kegiatan
+        await loadBeritaSekolah();
+
     } catch (err) {
-        showToast('Sebagian data gagal dimuat: ' + err.message, 'error');
-    } finally {
-        hideLoader();
+        console.error('Gagal memuat konten publik:', err);
     }
 }
 
-// 1. DATA SISWA
-async function loadSiswa() {
-    let query = db.from('siswa').select('*').order('KELAS', { ascending: true }).order('NAMA_SISWA', { ascending: true });
-    if (AppState.role === 'siswa') {
-        query = query.eq('ID_SISWA', AppState.user.id);
+// ================= BERITA & KEGIATAN =================
+async function loadBeritaSekolah() {
+    const grid = document.getElementById('berita-grid');
+    try {
+        const { data, error } = await db
+            .from('berita_sekolah')
+            .select('*')
+            .order('tanggal_publikasi', { ascending: false })
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        cacheBerita = data || [];
+        renderBeritaGrid();
+    } catch (err) {
+        grid.innerHTML = `<div class="section-card"><p class="text-muted text-sm">Tabel <code>berita_sekolah</code> belum siap atau kosong. Jalankan script SQL yang diberikan untuk mengaktifkan fitur berita.</p></div>`;
     }
-    const { data, error } = await query;
-    if (error) throw error;
-
-    cacheSiswa = data || [];
-    populateKelasFilter();
-    renderSiswaTable();
 }
 
-function populateKelasFilter() {
-    const kelasSet = [...new Set(cacheSiswa.map(s => s.KELAS).filter(Boolean))].sort();
-    const selSiswa = document.getElementById('filter-siswa-kelas');
-    const selAbsensi = document.getElementById('filter-absensi-kelas');
-
-    const optionsHtml = '<option value="">Semua Kelas</option>' +
-        kelasSet.map(k => `<option value="${k}">${k}</option>`).join('');
-
-    selSiswa.innerHTML = optionsHtml;
-    selAbsensi.innerHTML = optionsHtml;
+function filterBerita(kategori, btnEl) {
+    activeKategoriBerita = kategori;
+    document.querySelectorAll('.pill-btn').forEach(b => b.classList.remove('active'));
+    btnEl.classList.add('active');
+    renderBeritaGrid();
 }
 
-function renderSiswaTable() {
-    const keyword = document.getElementById('search-siswa').value.toLowerCase();
-    const kelas = document.getElementById('filter-siswa-kelas').value;
+function renderBeritaGrid() {
+    const grid = document.getElementById('berita-grid');
+    const filtered = activeKategoriBerita === 'Semua'
+        ? cacheBerita
+        : cacheBerita.filter(b => b.kategori === activeKategoriBerita);
 
-    const filtered = cacheSiswa.filter(s => {
-        const matchKelas = !kelas || s.KELAS === kelas;
-        const matchKey = !keyword ||
-            (s.NAMA_SISWA && s.NAMA_SISWA.toLowerCase().includes(keyword)) ||
-            (s.NISN && s.NISN.toLowerCase().includes(keyword)) ||
-            (s.ID_SISWA && s.ID_SISWA.toLowerCase().includes(keyword));
-        return matchKelas && matchKey;
-    });
-
-    const tbody = document.getElementById('siswa-tbody');
     if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center">Data siswa tidak ditemukan.</td></tr>';
+        grid.innerHTML = '<div class="section-card"><p class="text-muted text-sm">Belum ada berita atau kegiatan pada kategori ini.</p></div>';
         return;
     }
 
-    tbody.innerHTML = filtered.map(s => `
-        <tr>
-            <td><strong>${s.ID_SISWA}</strong></td>
-            <td>${s.NISN || '-'}</td>
-            <td>${s.NAMA_SISWA}</td>
-            <td><span class="badge badge-info">${s.KELAS}</span></td>
-            <td>${s.TTL || '-'}</td>
-            <td><span class="badge ${s.STATUS === 'AKTIF' || !s.STATUS ? 'badge-success' : 'badge-warning'}">${s.STATUS || 'AKTIF'}</span></td>
-        </tr>
-    `).join('');
+    grid.innerHTML = filtered.map(b => {
+        const excerpt = b.isi_berita.length > 125 ? b.isi_berita.slice(0, 125) + '...' : b.isi_berita;
+        const thumbHtml = b.gambar_url
+            ? `<img src="${b.gambar_url}" alt="${b.judul}" class="news-thumb" onerror="this.outerHTML='<div class=\\'news-thumb\\'><i class=\\'ph-fill ph-newspaper\\'></i></div>'">`
+            : `<div class="news-thumb"><i class="ph-fill ph-newspaper"></i></div>`;
+
+        const deleteBtn = redaksiAdmin
+            ? `<button class="btn-danger-sm" onclick="hapusBerita(${b.id})">Hapus</button>`
+            : '';
+
+        return `
+            <article class="news-card">
+                ${thumbHtml}
+                <div class="news-body">
+                    <div class="news-meta">
+                        <span class="badge badge-info">${b.kategori}</span>
+                        <span>${b.tanggal_publikasi}</span>
+                    </div>
+                    <h4 class="news-title">${b.judul}</h4>
+                    <p class="news-excerpt">${excerpt}</p>
+                    <div class="news-footer">
+                        <button class="btn-link" onclick="bacaBerita(${b.id})">Baca Selengkapnya &rarr;</button>
+                        ${deleteBtn}
+                    </div>
+                </div>
+            </article>
+        `;
+    }).join('');
 }
 
-// 2. DATA GURU & MAPEL
-async function loadGuru() {
-    const { data, error } = await db.from('guru').select('*').order('nama_guru', { ascending: true });
-    if (error) throw error;
-    cacheGuru = data || [];
-    renderGuruTable();
+function bacaBerita(id) {
+    const item = cacheBerita.find(b => b.id === id);
+    if (!item) return;
+
+    document.getElementById('read-berita-kategori').textContent = item.kategori;
+    document.getElementById('read-berita-judul').textContent = item.judul;
+    document.getElementById('read-berita-meta').textContent = `Dipublikasikan pada ${item.tanggal_publikasi} • Oleh ${item.penulis || 'Admin Sekolah'}`;
+    document.getElementById('read-berita-isi').textContent = item.isi_berita;
+
+    const imgEl = document.getElementById('read-berita-img');
+    if (item.gambar_url) {
+        imgEl.src = item.gambar_url;
+        imgEl.classList.remove('hidden');
+    } else {
+        imgEl.classList.add('hidden');
+    }
+
+    document.getElementById('modal-baca-berita').classList.remove('hidden');
 }
 
-function renderGuruTable() {
-    const keyword = document.getElementById('search-guru').value.toLowerCase();
-    const filtered = cacheGuru.filter(g =>
-        !keyword ||
-        (g.nama_guru && g.nama_guru.toLowerCase().includes(keyword)) ||
-        (g.mapel_diampu && g.mapel_diampu.toLowerCase().includes(keyword))
+// ================= DIREKTORI PENDIDIK =================
+function renderPublikGuru() {
+    const key = document.getElementById('pub-search-guru').value.toLowerCase();
+    const filtered = cacheGuruPublik.filter(g =>
+        !key ||
+        (g.nama_guru && g.nama_guru.toLowerCase().includes(key)) ||
+        (g.mapel_diampu && g.mapel_diampu.toLowerCase().includes(key))
     );
 
-    const tbody = document.getElementById('guru-tbody');
+    const tbody = document.getElementById('pub-guru-tbody');
     if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center">Data guru kosong.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center">Data pendidik tidak ditemukan.</td></tr>';
         return;
     }
 
     tbody.innerHTML = filtered.map(g => `
         <tr>
             <td><strong>${g.nama_guru}</strong></td>
-            <td>${g.nip || '-'}</td>
-            <td>${g.jabatan || 'Guru'}</td>
+            <td>${g.jabatan || 'Guru Mata Pelajaran'}</td>
             <td>${g.mapel_diampu}</td>
-            <td>${g.kelas_diampu}</td>
-            <td><span class="badge badge-success">${g.status || 'Aktif'}</span></td>
+            <td><span class="badge badge-success">${g.status_kepegawaian || 'Aktif'}</span></td>
         </tr>
     `).join('');
 }
 
-async function loadMapel() {
-    const { data } = await db.from('mapel').select('*').order('nama_mapel', { ascending: true });
-    cacheMapel = data || [];
-    const container = document.getElementById('mapel-grid');
-    container.innerHTML = cacheMapel.length
-        ? cacheMapel.map(m => `<div class="chip-item">${m.nama_mapel}</div>`).join('')
-        : '<p class="text-muted">Belum ada data mata pelajaran.</p>';
+// ================= MODE REDAKSI BERITA (ADMIN) =================
+function openAdminLoginModal() {
+    document.getElementById('modal-admin-login').classList.remove('hidden');
 }
 
-// 3. ABSENSI HARIAN
-async function loadAbsensiHarian() {
-    const tanggal = document.getElementById('filter-absensi-tanggal').value;
-    let query = db.from('absensi_harian').select('*').order('KELAS', { ascending: true }).order('NAMA_SISWA', { ascending: true });
-
-    if (tanggal) query = query.eq('TANGGAL', tanggal);
-    if (AppState.role === 'siswa') query = query.eq('ID_SISWA', AppState.user.id);
-
-    const { data, error } = await query;
-    if (error) throw error;
-
-    cacheAbsensi = data || [];
-    renderAbsensiTable();
-    renderDashboardAbsensi();
+function openModalBerita() {
+    document.getElementById('input-berita-tanggal').value = new Date().toISOString().split('T')[0];
+    document.getElementById('modal-tulis-berita').classList.remove('hidden');
 }
 
-function renderAbsensiTable() {
-    const kelas = document.getElementById('filter-absensi-kelas').value;
-    const filtered = cacheAbsensi.filter(a => !kelas || a.KELAS === kelas);
-
-    const tbody = document.getElementById('absensi-tbody');
-    if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="text-center">Belum ada catatan absensi pada tanggal ini.</td></tr>';
-        return;
-    }
-
-    tbody.innerHTML = filtered.map(a => `
-        <tr>
-            <td>${a.ID_SISWA}</td>
-            <td><strong>${a.NAMA_SISWA || '-'}</strong></td>
-            <td>${a.KELAS || '-'}</td>
-            <td>${a.JAM_PAGI || '-'}</td>
-            <td>${a.STATUS_PAGI || '-'}</td>
-            <td>${a.JAM_SIANG || '-'}</td>
-            <td>${a.STATUS_SIANG || '-'}</td>
-            <td><span class="badge ${getStatusBadgeClass(a.STATUS_AKHIR)}">${a.STATUS_AKHIR}</span></td>
-        </tr>
-    `).join('');
-}
-
-function renderDashboardAbsensi() {
-    const tbody = document.getElementById('dash-absensi-tbody');
-    const slice = cacheAbsensi.slice(0, 6);
-    if (slice.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Belum ada absensi hari ini.</td></tr>';
-        return;
-    }
-
-    tbody.innerHTML = slice.map(a => `
-        <tr>
-            <td><strong>${a.NAMA_SISWA || a.ID_SISWA}</strong></td>
-            <td>${a.KELAS || '-'}</td>
-            <td>${a.JAM_PAGI || '-'}</td>
-            <td><span class="badge ${getStatusBadgeClass(a.STATUS_AKHIR)}">${a.STATUS_AKHIR}</span></td>
-        </tr>
-    `).join('');
-}
-
-function getStatusBadgeClass(status) {
-    if (!status) return 'badge-info';
-    const s = status.toUpperCase();
-    if (s.includes('HADIR')) return 'badge-success';
-    if (s.includes('IZIN') || s.includes('SAKIT') || s.includes('TERLAMBAT')) return 'badge-warning';
-    return 'badge-danger';
-}
-
-// 4. TINDAK LANJUT SISWA
-async function loadTindakLanjut() {
-    let query = db.from('tindak_lanjut').select('*').order('CREATE_AT', { ascending: false });
-    if (AppState.role === 'siswa') query = query.eq('ID_SISWA', AppState.user.id);
-
-    const { data, error } = await query;
-    if (error) throw error;
-    cacheTindakLanjut = data || [];
-
-    const siswaMap = {};
-    cacheSiswa.forEach(s => { siswaMap[s.ID_SISWA] = `${s.NAMA_SISWA} (${s.KELAS})`; });
-
-    const tbody = document.getElementById('tindak-lanjut-tbody');
-    if (cacheTindakLanjut.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center">Belum ada catatan tindak lanjut.</td></tr>';
-        return;
-    }
-
-    tbody.innerHTML = cacheTindakLanjut.map(tl => `
-        <tr>
-            <td>${tl.TANGGAL}</td>
-            <td>${tl.ID_SISWA}</td>
-            <td><strong>${siswaMap[tl.ID_SISWA] || tl.ID_SISWA}</strong></td>
-            <td><span class="badge badge-warning">${tl.KATEGORI || 'Umum'}</span></td>
-            <td>${tl.CATATAN || '-'}</td>
-        </tr>
-    `).join('');
-}
-
-// 5. UJIAN CBT (JADWAL, HASIL & BANK SOAL)
-async function loadUjianData() {
-    const [resJadwal, resHasil, resBank] = await Promise.all([
-        db.from('jadwal_ujian').select('*').order('tanggal', { ascending: true }),
-        AppState.role === 'siswa'
-            ? db.from('hasil_ujian').select('*').eq('ID_SISWA', AppState.user.id).order('waktu_selesai', { ascending: false })
-            : db.from('hasil_ujian').select('*').order('waktu_selesai', { ascending: false }),
-        AppState.role !== 'siswa'
-            ? db.from('bank_soal').select('id, mapel, kelas')
-            : Promise.resolve({ data: [] })
-    ]);
-
-    cacheJadwalUjian = resJadwal.data || [];
-    cacheHasilUjian = resHasil.data || [];
-
-    renderJadwalUjian();
-    populateHasilMapelFilter();
-    renderHasilUjianTable();
-    renderBankSoalSummary(resBank.data || []);
-}
-
-function renderJadwalUjian() {
-    const tbody = document.getElementById('jadwal-ujian-tbody');
-    const dashList = document.getElementById('dash-jadwal-list');
-
-    if (cacheJadwalUjian.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center">Belum ada jadwal ujian.</td></tr>';
-        dashList.innerHTML = '<p class="text-muted text-sm">Tidak ada jadwal ujian aktif.</p>';
-        return;
-    }
-
-    tbody.innerHTML = cacheJadwalUjian.map(j => `
-        <tr>
-            <td><strong>${j.mapel}</strong></td>
-            <td><span class="badge badge-info">${j.kelas}</span></td>
-            <td>${j.tanggal}</td>
-            <td>${j.jam_mulai.slice(0,5)} - ${j.jam_selesai.slice(0,5)}</td>
-            <td>${j.durasi || 60} Menit</td>
-        </tr>
-    `).join('');
-
-    dashList.innerHTML = cacheJadwalUjian.slice(0, 4).map(j => `
-        <div class="list-item-card">
-            <div>
-                <strong>${j.mapel}</strong>
-                <div class="text-muted text-sm">Kelas ${j.kelas} • ${j.tanggal}</div>
-            </div>
-            <span class="badge badge-info">${j.jam_mulai.slice(0,5)}</span>
-        </div>
-    `).join('');
-}
-
-function populateHasilMapelFilter() {
-    const mapels = [...new Set(cacheHasilUjian.map(h => h.mapel).filter(Boolean))].sort();
-    const sel = document.getElementById('filter-hasil-mapel');
-    sel.innerHTML = '<option value="">Semua Mapel</option>' +
-        mapels.map(m => `<option value="${m}">${m}</option>`).join('');
-}
-
-function renderHasilUjianTable() {
-    const filterMapel = document.getElementById('filter-hasil-mapel').value;
-    const filtered = cacheHasilUjian.filter(h => !filterMapel || h.mapel === filterMapel);
-
-    const tbody = document.getElementById('hasil-ujian-tbody');
-    if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center">Belum ada hasil ujian tercatat.</td></tr>';
-        return;
-    }
-
-    tbody.innerHTML = filtered.map(h => `
-        <tr>
-            <td>${h.ID_SISWA}</td>
-            <td><strong>${h.nama_siswa || '-'}</strong></td>
-            <td>${h.kelas || '-'}</td>
-            <td>${h.mapel}</td>
-            <td><strong>${h.nilai !== null ? h.nilai : '-'}</strong></td>
-            <td>${h.jumlah_pelanggaran || 0}x</td>
-            <td><span class="badge ${h.status_selesai === 'Selesai' ? 'badge-success' : 'badge-warning'}">${h.status_selesai || 'Proses'}</span></td>
-        </tr>
-    `).join('');
-}
-
-function renderBankSoalSummary(soalList) {
-    const container = document.getElementById('bank-soal-summary');
-    if (!soalList.length) {
-        container.innerHTML = '<p class="text-muted">Belum ada soal di bank_soal.</p>';
-        return;
-    }
-
-    const grouped = {};
-    soalList.forEach(s => {
-        const key = `${s.mapel} (${s.kelas})`;
-        grouped[key] = (grouped[key] || 0) + 1;
-    });
-
-    container.innerHTML = Object.entries(grouped).map(([key, count]) => `
-        <div class="stat-card">
-            <div class="stat-icon"><i class="ph-fill ph-file-text"></i></div>
-            <div class="stat-info">
-                <span class="stat-label">${key}</span>
-                <h4>${count} Soal</h4>
-            </div>
-        </div>
-    `).join('');
-}
-
-// 6. PENGATURAN SISTEM & HARI LIBUR
-async function loadSistemSettings() {
-    const [resPengaturan, resWaktu, resLibur] = await Promise.all([
-        db.from('pengaturan').select('*'),
-        db.from('pengaturan_waktu').select('*'),
-        db.from('hari_libur').select('*').order('TANGGAL', { ascending: true })
-    ]);
-
-    const pList = document.getElementById('pengaturan-list');
-    pList.innerHTML = (resPengaturan.data || []).map(p => `
-        <div class="kv-row">
-            <span class="kv-key">${p.kunci}</span>
-            <span class="kv-val">${p.nilai || '-'}</span>
-        </div>
-    `).join('') || '<p class="text-muted">Belum ada data pengaturan.</p>';
-
-    const wList = document.getElementById('pengaturan-waktu-list');
-    wList.innerHTML = (resWaktu.data || []).map(w => `
-        <div class="kv-row">
-            <span class="kv-key">${w.kunci_waktu}</span>
-            <span class="kv-val">${w.nilai || '-'}</span>
-        </div>
-    `).join('') || '<p class="text-muted">Belum ada pengaturan waktu.</p>';
-
-    const lList = document.getElementById('hari-libur-list');
-    lList.innerHTML = (resLibur.data || []).map(l => `
-        <div class="list-item-card">
-            <strong>${l.KETERANGAN_LIBUR}</strong>
-            <span class="badge badge-danger">${l.TANGGAL}</span>
-        </div>
-    `).join('') || '<p class="text-muted text-sm">Tidak ada jadwal hari libur.</p>';
-}
-
-// UPDATE ANGKA DASHBOARD
-function updateDashboardStats() {
-    document.getElementById('stat-total-siswa').textContent = cacheSiswa.length;
-    document.getElementById('stat-total-guru').textContent = cacheGuru.length;
-    const hadirCount = cacheAbsensi.filter(a => a.STATUS_AKHIR && a.STATUS_AKHIR.toUpperCase().includes('HADIR')).length;
-    document.getElementById('stat-hadir-hari-ini').textContent = hadirCount;
-    document.getElementById('stat-jadwal-ujian').textContent = cacheJadwalUjian.length;
-}
-
-// NAVIGASI TAB & SUB-TAB
-function switchTab(tabName) {
-    AppState.activeTab = tabName;
-    document.querySelectorAll('.tab-view').forEach(sec => sec.classList.add('hidden'));
-    const target = document.getElementById(`tab-${tabName}`);
-    if (target) target.classList.remove('hidden');
-
-    document.querySelectorAll('.bottom-nav .nav-item').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.tab === tabName);
-    });
-}
-
-function switchSubTab(subName, btnEl) {
-    ['siswa', 'guru', 'mapel'].forEach(name => {
-        document.getElementById(`sub-${name}`).classList.toggle('hidden', name !== subName);
-    });
-    btnEl.parentElement.querySelectorAll('.sub-nav-btn').forEach(b => b.classList.remove('active'));
-    btnEl.classList.add('active');
-}
-
-function switchUjianSubTab(subName, btnEl) {
-    ['jadwal', 'hasil', 'bank'].forEach(name => {
-        document.getElementById(`sub-ujian-${name}`).classList.toggle('hidden', name !== subName);
-    });
-    btnEl.parentElement.querySelectorAll('.sub-nav-btn').forEach(b => b.classList.remove('active'));
-    btnEl.classList.add('active');
-}
-
-// MODAL HANDLERS (TAMBAH SISWA & TINDAK LANJUT)
-function openModalSiswa() {
-    document.getElementById('modal-siswa').classList.remove('hidden');
-}
-
-function openModalTindakLanjut() {
-    const select = document.getElementById('tl-id-siswa');
-    select.innerHTML = cacheSiswa.map(s =>
-        `<option value="${s.ID_SISWA}">${s.NAMA_SISWA} - ${s.KELAS} (${s.ID_SISWA})</option>`
-    ).join('');
-    document.getElementById('tl-tanggal').value = new Date().toISOString().split('T')[0];
-    document.getElementById('modal-tindak-lanjut').classList.remove('hidden');
-}
-
-function closeModal(modalId) {
-    document.getElementById(modalId).classList.add('hidden');
-}
-
-async function submitTambahSiswa(event) {
+async function handleRedaksiLogin(event) {
     event.preventDefault();
-    const payload = {
-        ID_SISWA: document.getElementById('input-id-siswa').value.trim(),
-        NISN: document.getElementById('input-nisn').value.trim() || null,
-        NAMA_SISWA: document.getElementById('input-nama-siswa').value.trim(),
-        KELAS: document.getElementById('input-kelas-siswa').value.trim(),
-        TTL: document.getElementById('input-ttl-siswa').value.trim() || null,
-        STATUS: 'AKTIF'
-    };
+    const username = document.getElementById('redaksi-username').value.trim();
+    const password = document.getElementById('redaksi-password').value.trim();
 
-    showLoader('Menyimpan data siswa...');
+    showLoader('Memverifikasi akun redaksi...');
     try {
-        const { error } = await db.from('siswa').insert([payload]);
+        const { data, error } = await db
+            .from('admin')
+            .select('id_admin, nama_admin, username, status')
+            .eq('username', username)
+            .eq('password', password)
+            .maybeSingle();
+
         if (error) throw error;
-        showToast('Data siswa berhasil ditambahkan!', 'success');
-        closeModal('modal-siswa');
-        event.target.reset();
-        await loadSiswa();
-        updateDashboardStats();
+        if (!data) throw new Error('Username atau password Admin salah.');
+
+        redaksiAdmin = data;
+        localStorage.setItem('sst_redaksi_admin', JSON.stringify(data));
+        applyRedaksiUI();
+        closeModal('modal-admin-login');
+        showToast(`Mode Redaksi aktif (${data.nama_admin})`, 'success');
+        renderBeritaGrid();
     } catch (err) {
-        showToast('Gagal menambah siswa: ' + err.message, 'error');
+        showToast(err.message, 'error');
     } finally {
         hideLoader();
     }
 }
 
-async function submitTindakLanjut(event) {
+function checkRedaksiSession() {
+    const raw = localStorage.getItem('sst_redaksi_admin');
+    if (raw) {
+        try {
+            redaksiAdmin = JSON.parse(raw);
+            applyRedaksiUI();
+        } catch (e) {
+            localStorage.removeItem('sst_redaksi_admin');
+        }
+    }
+}
+
+function applyRedaksiUI() {
+    const loggedIn = !!redaksiAdmin;
+    document.getElementById('btn-tulis-berita').classList.toggle('hidden', !loggedIn);
+    document.getElementById('btn-admin-login-trigger').classList.toggle('hidden', loggedIn);
+    document.getElementById('btn-admin-logout-trigger').classList.toggle('hidden', !loggedIn);
+    if (loggedIn) {
+        document.getElementById('redaksi-user-name').textContent = redaksiAdmin.nama_admin;
+    }
+}
+
+function logoutRedaksi() {
+    localStorage.removeItem('sst_redaksi_admin');
+    redaksiAdmin = null;
+    applyRedaksiUI();
+    renderBeritaGrid();
+    showToast('Keluar dari Mode Redaksi.', 'info');
+}
+
+async function submitBeritaBaru(event) {
     event.preventDefault();
+    if (!redaksiAdmin) return;
+
     const payload = {
-        ID_SISWA: document.getElementById('tl-id-siswa').value,
-        TANGGAL: document.getElementById('tl-tanggal').value,
-        KATEGORI: document.getElementById('tl-kategori').value,
-        CATATAN: document.getElementById('tl-catatan').value.trim()
+        judul: document.getElementById('input-berita-judul').value.trim(),
+        kategori: document.getElementById('input-berita-kategori').value,
+        tanggal_publikasi: document.getElementById('input-berita-tanggal').value,
+        gambar_url: document.getElementById('input-berita-gambar').value.trim() || null,
+        isi_berita: document.getElementById('input-berita-isi').value.trim(),
+        penulis: redaksiAdmin.nama_admin
     };
 
-    showLoader('Menyimpan catatan pembinaan...');
+    showLoader('Menerbitkan berita...');
     try {
-        const { error } = await db.from('tindak_lanjut').insert([payload]);
+        const { error } = await db.from('berita_sekolah').insert([payload]);
         if (error) throw error;
-        showToast('Catatan tindak lanjut berhasil disimpan!', 'success');
-        closeModal('modal-tindak-lanjut');
+        showToast('Berita berhasil diterbitkan!', 'success');
+        closeModal('modal-tulis-berita');
         event.target.reset();
-        await loadTindakLanjut();
+        await loadBeritaSekolah();
     } catch (err) {
-        showToast('Gagal menyimpan catatan: ' + err.message, 'error');
+        showToast('Gagal menerbitkan berita: ' + err.message, 'error');
+    } finally {
+        hideLoader();
+    }
+}
+
+async function hapusBerita(id) {
+    if (!redaksiAdmin || !confirm('Hapus berita ini secara permanen?')) return;
+    showLoader('Menghapus berita...');
+    try {
+        const { error } = await db.from('berita_sekolah').delete().eq('id', id);
+        if (error) throw error;
+        showToast('Berita dihapus.', 'success');
+        await loadBeritaSekolah();
+    } catch (err) {
+        showToast('Gagal menghapus: ' + err.message, 'error');
     } finally {
         hideLoader();
     }
