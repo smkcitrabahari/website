@@ -12,19 +12,13 @@
 </head>
 <body>
 
-    <!-- LOADER -->
-    <div id="global-loader" class="loader-overlay hidden">
-        <div class="spinner"></div>
-        <p id="loader-text">Memuat informasi...</p>
-    </div>
-
     <!-- TOAST -->
     <div id="toast-container" class="toast-container"></div>
 
-    <!-- ================= NAVBAR UTAMA ================= -->
+    <!-- NAVBAR UTAMA -->
     <nav class="public-navbar">
         <div class="nav-container">
-            <a href="#" class="brand-box">
+            <a href="#beranda" class="brand-box">
                 <div class="brand-icon"><i class="ph-fill ph-graduation-cap"></i></div>
                 <div>
                     <h1 id="pub-nav-title">Portal Resmi Sekolah</h1>
@@ -33,11 +27,11 @@
             </a>
 
             <div class="nav-links" id="nav-links">
-                <a href="#beranda">Beranda</a>
-                <a href="#berita">Berita & Kegiatan</a>
-                <a href="#profil">Profil</a>
-                <a href="#guru">Pendidik</a>
-                <a href="#kontak">Kontak</a>
+                <a href="#beranda" onclick="closeMobileNav()">Beranda</a>
+                <a href="#berita" onclick="closeMobileNav()">Berita & Kegiatan</a>
+                <a href="#profil" onclick="closeMobileNav()">Profil</a>
+                <a href="#guru" onclick="closeMobileNav()">Pendidik</a>
+                <a href="#kontak" onclick="closeMobileNav()">Kontak</a>
             </div>
 
             <button class="mobile-menu-btn" onclick="toggleMobileNav()" aria-label="Menu">
@@ -46,15 +40,15 @@
         </div>
     </nav>
 
-    <!-- ================= HERO BANNER ================= -->
+    <!-- HERO BANNER -->
     <header id="beranda" class="hero-section">
         <div class="hero-container">
             <span class="hero-pill">Website Resmi Sekolah</span>
             <h2 id="pub-hero-title">Selamat Datang di Portal Informasi Sekolah</h2>
-            <p id="pub-hero-desc">Media informasi resmi kegiatan sekolah, pengumuman akademik, direktori pendidik, dan layanan komunikasi masyarakat.</p>
+            <p id="pub-hero-desc">Media informasi resmi kegiatan pembelajaran, pengumuman akademik, direktori pendidik, dan layanan komunikasi masyarakat.</p>
             <div class="hero-actions">
                 <a href="#berita" class="btn-light">
-                    <i class="ph-fill ph-newspaper"></i> Berita & Kegiatan Terbaru
+                    <i class="ph-fill ph-newspaper"></i> Berita & Kegiatan
                 </a>
                 <a id="hero-wa-btn" href="https://wa.me/6285298875399" target="_blank" rel="noopener noreferrer" class="btn-wa-hero">
                     <i class="ph-fill ph-whatsapp-logo"></i> Hubungi via WhatsApp
@@ -63,41 +57,41 @@
         </div>
     </header>
 
-    <!-- ================= STATISTIK SEKOLAH ================= -->
+    <!-- STATISTIK SEKOLAH -->
     <section class="container-box stats-floating">
         <div class="stats-grid">
             <div class="stat-card blue">
                 <div class="stat-icon"><i class="ph-fill ph-users-three"></i></div>
                 <div class="stat-info">
                     <span class="stat-label">Peserta Didik Aktif</span>
-                    <h4 id="pub-stat-siswa">0</h4>
+                    <h4 id="pub-stat-siswa">-</h4>
                 </div>
             </div>
             <div class="stat-card teal">
                 <div class="stat-icon"><i class="ph-fill ph-chalkboard-teacher"></i></div>
                 <div class="stat-info">
                     <span class="stat-label">Pendidik & Staf</span>
-                    <h4 id="pub-stat-guru">0</h4>
+                    <h4 id="pub-stat-guru">-</h4>
                 </div>
             </div>
             <div class="stat-card green">
                 <div class="stat-icon"><i class="ph-fill ph-books"></i></div>
                 <div class="stat-info">
                     <span class="stat-label">Mata Pelajaran</span>
-                    <h4 id="pub-stat-mapel">0</h4>
+                    <h4 id="pub-stat-mapel">-</h4>
                 </div>
             </div>
             <div class="stat-card orange">
                 <div class="stat-icon"><i class="ph-fill ph-buildings"></i></div>
                 <div class="stat-info">
                     <span class="stat-label">Rombongan Belajar</span>
-                    <h4 id="pub-stat-kelas">0</h4>
+                    <h4 id="pub-stat-kelas">-</h4>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- ================= BERITA & KEGIATAN SEKOLAH ================= -->
+    <!-- BERITA & KEGIATAN SEKOLAH -->
     <section id="berita" class="pub-section container-box">
         <div class="section-header-row">
             <div>
@@ -109,9 +103,6 @@
                 <button class="pill-btn" onclick="filterBerita('Kegiatan', this)">Kegiatan</button>
                 <button class="pill-btn" onclick="filterBerita('Pengumuman', this)">Pengumuman</button>
                 <button class="pill-btn" onclick="filterBerita('Prestasi', this)">Prestasi</button>
-                <button id="btn-tulis-berita" class="btn-primary btn-sm hidden" onclick="openModalBerita()">
-                    <i class="ph ph-plus"></i> Tulis Berita
-                </button>
             </div>
         </div>
 
@@ -120,7 +111,7 @@
         </div>
     </section>
 
-    <!-- ================= PROFIL SEKOLAH & KALENDER LIBUR ================= -->
+    <!-- PROFIL SEKOLAH & KALENDER LIBUR -->
     <section id="profil" class="pub-section container-box">
         <div class="grid-two-col">
             <div class="section-card">
@@ -140,7 +131,7 @@
         </div>
     </section>
 
-    <!-- ================= DIREKTORI PENDIDIK & MAPEL ================= -->
+    <!-- DIREKTORI PENDIDIK -->
     <section id="guru" class="pub-section container-box">
         <div class="section-card">
             <div class="card-header-flex">
@@ -168,13 +159,13 @@
         </div>
     </section>
 
-    <!-- ================= KONTAK RESMI & LAYANAN WHATSAPP ================= -->
+    <!-- KONTAK RESMI & LAYANAN WHATSAPP -->
     <section id="kontak" class="pub-section container-box">
         <div class="contact-banner">
             <div class="contact-info">
                 <span class="contact-tag">Layanan Informasi & Pengaduan</span>
                 <h3>Hubungi Layanan Resmi Sekolah</h3>
-                <p>Memiliki pertanyaan seputar pendaftaran peserta didik baru, surat keterangan, atau informasi kegiatan sekolah? Silakan hubungi admin tata usaha kami langsung melalui WhatsApp.</p>
+                <p>Memiliki pertanyaan seputar pendaftaran peserta didik baru, surat keterangan, atau informasi kegiatan sekolah? Silakan hubungi tata usaha kami langsung melalui WhatsApp.</p>
                 <div class="contact-meta">
                     <div><i class="ph-fill ph-map-pin"></i> <span id="contact-alamat">Lokasi Sekolah</span></div>
                     <div><i class="ph-fill ph-whatsapp-logo"></i> <span id="contact-wa-text">-</span></div>
@@ -188,29 +179,22 @@
         </div>
     </section>
 
-    <!-- ================= FOOTER ================= -->
+    <!-- FOOTER PUBLIK MURNI -->
     <footer class="public-footer">
         <div class="footer-container">
-            <p id="pub-footer-text">&copy; 2026 Portal Resmi Sekolah. Hak Cipta Dilindungi.</p>
-            <div class="footer-admin-area">
-                <button id="btn-admin-login-trigger" class="btn-footer-link" onclick="openAdminLoginModal()">
-                    <i class="ph ph-lock-simple"></i> Login Redaksi / Admin
-                </button>
-                <button id="btn-admin-logout-trigger" class="btn-footer-link danger hidden" onclick="logoutRedaksi()">
-                    <i class="ph ph-sign-out"></i> Keluar Mode Redaksi (<span id="redaksi-user-name"></span>)
-                </button>
-            </div>
+            <p id="pub-footer-text">&copy; 2026 Portal Resmi Sekolah. Seluruh Hak Cipta Dilindungi.</p>
+            <span>Portal Informasi Publik Sekolah</span>
         </div>
     </footer>
 
-    <!-- TOMBOL WHATSAPP MENGAMBANG (FLOATING WA) -->
-    <a id="floating-wa-btn" href="https://wa.me/6285298875399?text=Halo%20Admin%20Sekolah,%20saya%20ingin%20bertanya%20mengenai%20informasi%20sekolah." target="_blank" rel="noopener noreferrer" class="floating-wa" title="Hubungi Sekolah via WhatsApp">
+    <!-- TOMBOL WHATSAPP MENGAMBANG -->
+    <a id="floating-wa-btn" href="https://wa.me/6285298875399" target="_blank" rel="noopener noreferrer" class="floating-wa" title="Hubungi Sekolah via WhatsApp">
         <i class="ph-fill ph-whatsapp-logo"></i>
         <span>Tanya Sekolah</span>
     </a>
 
-    <!-- ================= MODAL BACA BERITA LENGKAP ================= -->
-    <div id="modal-baca-berita" class="modal-backdrop hidden">
+    <!-- MODAL BACA BERITA LENGKAP -->
+    <div id="modal-baca-berita" class="modal-backdrop hidden" onclick="if(event.target===this) closeModal('modal-baca-berita')">
         <div class="modal-box modal-lg">
             <div class="modal-header">
                 <span id="read-berita-kategori" class="badge badge-info">Kegiatan</span>
@@ -220,71 +204,6 @@
             <p id="read-berita-meta" class="text-muted text-sm mb-3">Tanggal • Penulis</p>
             <img id="read-berita-img" src="" alt="Gambar Kegiatan" class="read-img hidden">
             <div id="read-berita-isi" class="read-body"></div>
-        </div>
-    </div>
-
-    <!-- ================= MODAL LOGIN ADMIN REDAKSI ================= -->
-    <div id="modal-admin-login" class="modal-backdrop hidden">
-        <div class="modal-box" style="max-width: 400px;">
-            <div class="modal-header">
-                <h3>Login Redaksi Berita</h3>
-                <button class="btn-close" onclick="closeModal('modal-admin-login')">&times;</button>
-            </div>
-            <p class="text-muted text-sm mb-3">Masuk menggunakan akun Admin untuk menambah atau menghapus berita & pengumuman sekolah.</p>
-            <form onsubmit="handleRedaksiLogin(event)">
-                <div class="form-group">
-                    <label>Username Admin</label>
-                    <input type="text" id="redaksi-username" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label>Password</label>
-                    <input type="password" id="redaksi-password" class="form-control" required>
-                </div>
-                <button type="submit" class="btn-primary btn-block">Masuk Mode Redaksi</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- ================= MODAL TULIS BERITA BARU ================= -->
-    <div id="modal-tulis-berita" class="modal-backdrop hidden">
-        <div class="modal-box modal-lg">
-            <div class="modal-header">
-                <h3>Publikasikan Berita / Kegiatan Baru</h3>
-                <button class="btn-close" onclick="closeModal('modal-tulis-berita')">&times;</button>
-            </div>
-            <form onsubmit="submitBeritaBaru(event)">
-                <div class="form-group">
-                    <label>Judul Berita / Pengumuman *</label>
-                    <input type="text" id="input-berita-judul" class="form-control" placeholder="Contoh: Pelaksanaan Uji Kompetensi Keahlian (UKK) Tahun 2026" required>
-                </div>
-                <div class="grid-two-col">
-                    <div class="form-group">
-                        <label>Kategori *</label>
-                        <select id="input-berita-kategori" class="form-control">
-                            <option value="Kegiatan">Kegiatan</option>
-                            <option value="Pengumuman">Pengumuman</option>
-                            <option value="Prestasi">Prestasi</option>
-                            <option value="Berita">Berita</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Tanggal Publikasi *</label>
-                        <input type="date" id="input-berita-tanggal" class="form-control" required>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>URL Gambar Dokumentasi (Opsional)</label>
-                    <input type="url" id="input-berita-gambar" class="form-control" placeholder="https://... (link foto kegiatan)">
-                </div>
-                <div class="form-group">
-                    <label>Isi Berita / Pengumuman Lengkap *</label>
-                    <textarea id="input-berita-isi" class="form-control" rows="6" placeholder="Tuliskan detail kegiatan atau pengumuman di sini..." required></textarea>
-                </div>
-                <div class="modal-actions">
-                    <button type="button" class="btn-secondary" onclick="closeModal('modal-tulis-berita')">Batal</button>
-                    <button type="submit" class="btn-primary">Terbitkan Sekarang</button>
-                </div>
-            </form>
         </div>
     </div>
 
