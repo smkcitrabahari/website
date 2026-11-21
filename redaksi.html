@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Panel Redaksi & Konten Sekolah</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+</head>
+<body>
+
+    <div id="global-loader" class="loader-overlay hidden">
+        <div class="spinner"></div>
+        <p id="loader-text">Memproses...</p>
+    </div>
+
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- HALAMAN LOGIN REDAKSI -->
+    <section id="redaksi-login-view" class="login-wrapper">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="school-badge"><i class="ph-fill ph-newspaper-clipping"></i></div>
+                <h2>Panel Redaksi Sekolah</h2>
+                <p>Khusus Admin / Operator Website Sekolah</p>
+            </div>
+
+            <form onsubmit="handleRedaksiLogin(event)">
+                <div class="form-group">
+                    <label>Username Admin</label>
+                    <input type="text" id="redaksi-username" class="form-control" placeholder="Masukkan username admin" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="redaksi-password" class="form-control" placeholder="Masukkan password" required>
+                </div>
+                <button type="submit" class="btn-primary btn-block">
+                    <i class="ph ph-sign-in"></i> Masuk Panel Redaksi
+                </button>
+            </form>
+
+            <div style="margin-top: 16px; text-align: center;">
+                <a href="index.html" class="btn-link">&larr; Kembali ke Website Publik</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- DASHBOARD REDAKSI (SETELAH LOGIN) -->
+    <div id="redaksi-dashboard" class="hidden">
+        <header class="public-navbar">
+            <div class="nav-container">
+                <div class="brand-box">
+                    <div class="brand-icon"><i class="ph-fill ph-pencil-simple-line"></i></div>
+                    <div>
+                        <h1>Manajemen Konten Website</h1>
+                        <span id="redaksi-admin-badge">Admin Redaksi</span>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <a href="index.html" target="_blank" class="btn-secondary btn-sm">Lihat Website</a>
+                    <button class="btn-danger-sm" onclick="logoutRedaksi()">Keluar</button>
+                </div>
+            </div>
+        </header>
+
+        <main class="container-box" style="padding-top: 24px; padding-bottom: 48px;">
+            
+            <!-- PENGATURAN IDENTITAS & WHATSAPP SEKOLAH -->
+            <div class="section-card mb-3">
+                <div class="card-header-flex">
+                    <div>
+                        <h3 class="card-title"><i class="ph-fill ph-whatsapp-logo"></i> Pengaturan Identitas & Kontak WhatsApp</h3>
+                        <p class="text-muted text-sm">Perubahan di sini langsung tampil di halaman utama website sekolah.</p>
+                    </div>
+                </div>
+                <form onsubmit="simpanPengaturanWeb(event)" class="grid-two-col">
+                    <div class="form-group">
+                        <label>Nama Resmi Sekolah</label>
+                        <input type="text" id="set-nama-sekolah" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Nomor WhatsApp Resmi (Format 628...)</label>
+                        <input type="text" id="set-wa-sekolah" class="form-control" placeholder="6285298875399" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Alamat Sekolah</label>
+                        <input type="text" id="set-alamat-sekolah" class="form-control">
+                    </div>
+                    <div class="form-group" style="display: flex; align-items: flex-end;">
+                        <button type="submit" class="btn-primary">
+                            <i class="ph ph-floppy-disk"></i> Simpan Pengaturan Kontak
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- DAFTAR BERITA & KEGIATAN -->
+            <div class="section-card">
+                <div class="card-header-flex">
+                    <div>
+                        <h3 class="card-title"><i class="ph-fill ph-newspaper"></i> Daftar Berita & Kegiatan Terbit</h3>
+                        <p class="text-muted text-sm">Kelola publikasi berita, pengumuman, dan dokumentasi kegiatan sekolah.</p>
+                    </div>
+                    <button class="btn-primary" onclick="openFormBerita()">
+                        <i class="ph ph-plus"></i> Tulis Berita Baru
+                    </button>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Tanggal</th>
+                                <th>Kategori</th>
+                                <th>Judul Berita</th>
+                                <th>Penulis</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="redaksi-berita-tbody">
+                            <tr><td colspan="5" class="text-center">Memuat daftar berita...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- MODAL FORM TAMBAH / EDIT BERITA -->
+    <div id="modal-form-berita" class="modal-backdrop hidden">
+        <div class="modal-box modal-lg">
+            <div class="modal-header">
+                <h3 id="modal-berita-heading">Tulis Berita / Kegiatan Baru</h3>
+                <button class="btn-close" onclick="closeModal('modal-form-berita')">&times;</button>
+            </div>
+
+            <form onsubmit="submitFormBerita(event)">
+                <input type="hidden" id="edit-berita-id">
+
+                <div class="form-group">
+                    <label>Judul Berita / Kegiatan *</label>
+                    <input type="text" id="form-berita-judul" class="form-control" required>
+                </div>
+
+                <div class="grid-two-col">
+                    <div class="form-group">
+                        <label>Kategori *</label>
+                        <select id="form-berita-kategori" class="form-control">
+                            <option value="Kegiatan">Kegiatan</option>
+                            <option value="Pengumuman">Pengumuman</option>
+                            <option value="Prestasi">Prestasi</option>
+                            <option value="Berita">Berita</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Tanggal Publikasi *</label>
+                        <input type="date" id="form-berita-tanggal" class="form-control" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Unggah Foto Dokumentasi (Otomatis dikompres & diupload)</label>
+                    <input type="file" id="form-berita-file" class="form-control" accept="image/*" onchange="previewFotoUpload(event)">
+                    <input type="hidden" id="form-berita-gambar-url">
+                    <img id="preview-foto-berita" src="" alt="Preview" class="read-img hidden" style="margin-top: 10px; max-height: 200px;">
+                </div>
+
+                <div class="form-group">
+                    <label>Isi Berita / Pengumuman *</label>
+                    <textarea id="form-berita-isi" class="form-control" rows="7" placeholder="Tuliskan detail berita atau kegiatan sekolah..." required></textarea>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="closeModal('modal-form-berita')">Batal</button>
+                    <button type="submit" class="btn-primary">
+                        <i class="ph ph-paper-plane-tilt"></i> Simpan & Publikasikan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="redaksi.js"></script>
+</body>
+</html>
