@@ -64,9 +64,26 @@
                 </div>
 
                 <button type="submit" class="btn-primary btn-block">
-                    <i class="ph ph-sign-in"></i> Masuk ke Sistem
+                    <i class="ph ph-sign-in"></i> Masuk ke Portal Utama
                 </button>
             </form>
+
+            <!-- PINTASAN LANGSUNG KE APLIKASI ABSENSI & CBT DI HALAMAN LOGIN -->
+            <div class="login-quick-apps">
+                <div class="divider-text"><span>Akses Langsung Aplikasi</span></div>
+                <div class="ext-app-pair">
+                    <a href="https://smkcitrabahari.github.io/absensiqrcode/" target="_blank" rel="noopener noreferrer" class="ext-pill ext-green">
+                        <i class="ph-fill ph-qr-code"></i>
+                        <span>Absensi QR</span>
+                        <i class="ph ph-arrow-up-right ext-arrow"></i>
+                    </a>
+                    <a href="https://smkcitrabahari.github.io/cbt/" target="_blank" rel="noopener noreferrer" class="ext-pill ext-purple">
+                        <i class="ph-fill ph-desktop"></i>
+                        <span>Ujian CBT</span>
+                        <i class="ph ph-arrow-up-right ext-arrow"></i>
+                    </a>
+                </div>
+            </div>
 
             <div class="login-footer">
                 <span class="status-dot online"></span> Terhubung ke Database Sekolah
@@ -141,21 +158,50 @@
                     </div>
                 </div>
 
-                <!-- MENU CEPAT (QUICK ACTIONS ALA E-WALLET) -->
+                <!-- APLIKASI EKOSISTEM TERINTEGRASI (BANNER KARTU UTAMA) -->
+                <div class="ecosystem-grid">
+                    <a href="https://smkcitrabahari.github.io/absensiqrcode/" target="_blank" rel="noopener noreferrer" class="eco-card eco-absensi">
+                        <div class="eco-icon">
+                            <i class="ph-fill ph-qr-code"></i>
+                        </div>
+                        <div class="eco-body">
+                            <div class="eco-title-row">
+                                <h4>Aplikasi Absensi QR Code</h4>
+                                <span class="eco-badge">Buka App <i class="ph ph-arrow-up-right"></i></span>
+                            </div>
+                            <p>Scan kartu QR siswa & catat kehadiran sesi pagi/siang secara real-time.</p>
+                        </div>
+                    </a>
+
+                    <a href="https://smkcitrabahari.github.io/cbt/" target="_blank" rel="noopener noreferrer" class="eco-card eco-cbt">
+                        <div class="eco-icon">
+                            <i class="ph-fill ph-desktop"></i>
+                        </div>
+                        <div class="eco-body">
+                            <div class="eco-title-row">
+                                <h4>Aplikasi Ujian CBT Online</h4>
+                                <span class="eco-badge">Buka App <i class="ph ph-arrow-up-right"></i></span>
+                            </div>
+                            <p>Ruang ujian berbasis komputer, manajemen bank soal & pengawasan ujian.</p>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- MENU CEPAT INTERNAL (QUICK ACTIONS ALA E-WALLET) -->
                 <div class="section-card">
-                    <h3 class="card-title">Layanan Terpadu</h3>
+                    <h3 class="card-title">Menu Manajemen Portal</h3>
                     <div class="quick-menu-grid">
                         <button class="quick-item" onclick="switchTab('absensi')">
-                            <div class="q-icon bg-green"><i class="ph-fill ph-qr-code"></i></div>
-                            <span>Absensi Harian</span>
+                            <div class="q-icon bg-green"><i class="ph-fill ph-calendar-check"></i></div>
+                            <span>Rekap Absensi</span>
                         </button>
                         <button class="quick-item" onclick="switchTab('akademik')">
                             <div class="q-icon bg-blue"><i class="ph-fill ph-student"></i></div>
                             <span>Data Siswa</span>
                         </button>
                         <button class="quick-item" onclick="switchTab('ujian')">
-                            <div class="q-icon bg-purple"><i class="ph-fill ph-desktop"></i></div>
-                            <span>Ujian CBT</span>
+                            <div class="q-icon bg-purple"><i class="ph-fill ph-exam"></i></div>
+                            <span>Hasil Ujian</span>
                         </button>
                         <button class="quick-item" onclick="switchTab('tindak-lanjut')">
                             <div class="q-icon bg-orange"><i class="ph-fill ph-warning-circle"></i></div>
@@ -209,6 +255,9 @@
                             <p class="text-muted text-sm">Rekap kehadiran sesi pagi dan siang dari tabel <code>absensi_harian</code></p>
                         </div>
                         <div class="filter-group">
+                            <a href="https://smkcitrabahari.github.io/absensiqrcode/" target="_blank" rel="noopener noreferrer" class="btn-ext-action btn-ext-green">
+                                <i class="ph-fill ph-qr-code"></i> Buka Scanner QR
+                            </a>
                             <input type="date" id="filter-absensi-tanggal" class="form-control" onchange="loadAbsensiHarian()">
                             <select id="filter-absensi-kelas" class="form-control" onchange="renderAbsensiTable()">
                                 <option value="">Semua Kelas</option>
@@ -238,7 +287,7 @@
                 </div>
             </section>
 
-            <!-- 3. TAB AKADEMIK (DATA SISWA, GURU & TINDAK LANJUT) -->
+            <!-- 3. TAB AKADEMIK (DATA SISWA, GURU & MAPEL) -->
             <section id="tab-akademik" class="tab-view hidden">
                 <div class="sub-nav">
                     <button class="sub-nav-btn active" onclick="switchSubTab('siswa', this)">Data Siswa</button>
@@ -340,10 +389,15 @@
 
             <!-- 5. TAB UJIAN CBT & HASIL -->
             <section id="tab-ujian" class="tab-view hidden">
-                <div class="sub-nav">
-                    <button class="sub-nav-btn active" onclick="switchUjianSubTab('jadwal', this)">Jadwal Ujian</button>
-                    <button class="sub-nav-btn" onclick="switchUjianSubTab('hasil', this)">Hasil Ujian CBT</button>
-                    <button class="sub-nav-btn staff-only" onclick="switchUjianSubTab('bank', this)">Ringkasan Bank Soal</button>
+                <div class="card-header-flex mb-3">
+                    <div class="sub-nav" style="margin-bottom: 0;">
+                        <button class="sub-nav-btn active" onclick="switchUjianSubTab('jadwal', this)">Jadwal Ujian</button>
+                        <button class="sub-nav-btn" onclick="switchUjianSubTab('hasil', this)">Hasil Ujian CBT</button>
+                        <button class="sub-nav-btn staff-only" onclick="switchUjianSubTab('bank', this)">Bank Soal</button>
+                    </div>
+                    <a href="https://smkcitrabahari.github.io/cbt/" target="_blank" rel="noopener noreferrer" class="btn-ext-action btn-ext-purple">
+                        <i class="ph-fill ph-desktop"></i> Masuk Aplikasi CBT
+                    </a>
                 </div>
 
                 <div id="sub-ujian-jadwal" class="section-card">
