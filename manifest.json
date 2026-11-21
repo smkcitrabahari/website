@@ -1,0 +1,16 @@
+{
+  "name": "Sistem Sekolah Terpadu (SST)",
+  "short_name": "SST Sekolah",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f4c81",
+  "theme_color": "#0f4c81",
+  "description": "Portal Akademik, Absensi Harian, Kedisiplinan, dan Ujian CBT Terpadu",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/8074/8074788.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
