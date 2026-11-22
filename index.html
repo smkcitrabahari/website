@@ -12,6 +12,12 @@
 </head>
 <body>
 
+    <!-- LOADER -->
+    <div id="global-loader" class="loader-overlay hidden">
+        <div class="spinner"></div>
+        <p id="loader-text">Memproses pendaftaran...</p>
+    </div>
+
     <!-- TOAST -->
     <div id="toast-container" class="toast-container"></div>
 
@@ -22,14 +28,15 @@
                 <div class="brand-icon"><i class="ph-fill ph-graduation-cap"></i></div>
                 <div>
                     <h1 id="pub-nav-title">Portal Resmi Sekolah</h1>
-                    <span id="pub-nav-subtitle">Informasi Akademik & Kegiatan Sekolah</span>
+                    <span id="pub-nav-subtitle">Informasi Akademik & PPDB Online</span>
                 </div>
             </a>
 
             <div class="nav-links" id="nav-links">
                 <a href="#beranda" onclick="closeMobileNav()">Beranda</a>
-                <a href="#jurusan" onclick="closeMobileNav()">Kompetensi Keahlian</a>
-                <a href="#berita" onclick="closeMobileNav()">Berita & Kegiatan</a>
+                <a href="#ppdb" onclick="closeMobileNav()">PPDB Online</a>
+                <a href="#jurusan" onclick="closeMobileNav()">Jurusan</a>
+                <a href="#berita" onclick="closeMobileNav()">Berita</a>
                 <a href="#profil" onclick="closeMobileNav()">Profil</a>
                 <a href="#guru" onclick="closeMobileNav()">Pendidik</a>
                 <a href="#kontak" onclick="closeMobileNav()">Kontak</a>
@@ -44,12 +51,12 @@
     <!-- HERO BANNER -->
     <header id="beranda" class="hero-section">
         <div class="hero-container">
-            <span class="hero-pill">Website Resmi Sekolah</span>
+            <span class="hero-pill" id="hero-ppdb-pill">Penerimaan Peserta Didik Baru Dibuka</span>
             <h2 id="pub-hero-title">Selamat Datang di Portal Informasi Sekolah</h2>
-            <p id="pub-hero-desc">Media informasi resmi kompetensi keahlian, kegiatan pembelajaran, pengumuman akademik, direktori pendidik, dan layanan komunikasi masyarakat.</p>
+            <p id="pub-hero-desc">Media informasi resmi kompetensi keahlian, pendaftaran peserta didik baru (PPDB), kegiatan pembelajaran, direktori pendidik, dan layanan komunikasi masyarakat.</p>
             <div class="hero-actions">
-                <a href="#jurusan" class="btn-light">
-                    <i class="ph-fill ph-compass"></i> Lihat Kompetensi Keahlian
+                <a href="#ppdb" class="btn-light">
+                    <i class="ph-fill ph-user-plus"></i> Daftar PPDB Online
                 </a>
                 <a id="hero-wa-btn" href="https://wa.me/6285298875399" target="_blank" rel="noopener noreferrer" class="btn-wa-hero">
                     <i class="ph-fill ph-whatsapp-logo"></i> Hubungi via WhatsApp
@@ -103,6 +110,123 @@
 
         <div id="jurusan-grid" class="jurusan-grid">
             <p class="text-muted text-sm">Memuat daftar kompetensi keahlian...</p>
+        </div>
+    </section>
+
+    <!-- ================= FORMULIR PPDB ONLINE & CEK STATUS ================= -->
+    <section id="ppdb" class="pub-section container-box">
+        <div class="ppdb-wrapper">
+            <div class="ppdb-header-banner">
+                <div>
+                    <span class="ppdb-tag" id="ppdb-ta-badge">PPDB Tahun Ajaran 2026/2027</span>
+                    <h3>Formulir Pendaftaran Peserta Didik Baru (PPDB)</h3>
+                    <p>Isi data calon peserta didik dengan benar sesuai Ijazah / Kartu Keluarga, lalu kirim konfirmasi langsung ke WhatsApp Panitia PPDB.</p>
+                </div>
+                <div class="ppdb-counter-box">
+                    <span>Total Pendaftar Online</span>
+                    <strong id="ppdb-total-pendaftar">0</strong>
+                </div>
+            </div>
+
+            <div class="ppdb-body-grid">
+                <!-- KOLOM KIRI: FORMULIR PENDAFTARAN -->
+                <form id="form-ppdb" class="ppdb-form" onsubmit="submitFormPPDB(event)">
+                    <div class="grid-two-col">
+                        <div class="form-group">
+                            <label for="ppdb-nama">Nama Lengkap Calon Siswa *</label>
+                            <input type="text" id="ppdb-nama" class="form-control" placeholder="Sesuai akta kelahiran / ijazah" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="ppdb-nisn">NISN (10 Digit)</label>
+                            <input type="text" id="ppdb-nisn" class="form-control" maxlength="10" placeholder="Contoh: 0091234567">
+                        </div>
+                    </div>
+
+                    <div class="grid-two-col">
+                        <div class="form-group">
+                            <label for="ppdb-jk">Jenis Kelamin *</label>
+                            <select id="ppdb-jk" class="form-control" required>
+                                <option value="">-- Pilih Jenis Kelamin --</option>
+                                <option value="Laki-laki">Laki-laki</option>
+                                <option value="Perempuan">Perempuan</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="ppdb-asal-sekolah">Asal Sekolah (SMP / MTs) *</label>
+                            <input type="text" id="ppdb-asal-sekolah" class="form-control" placeholder="Contoh: SMP Negeri 1 Wangi-Wangi" required>
+                        </div>
+                    </div>
+
+                    <div class="grid-two-col">
+                        <div class="form-group">
+                            <label for="ppdb-tempat-lahir">Tempat Lahir *</label>
+                            <input type="text" id="ppdb-tempat-lahir" class="form-control" placeholder="Kota / Kabupaten lahir" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="ppdb-tanggal-lahir">Tanggal Lahir *</label>
+                            <input type="date" id="ppdb-tanggal-lahir" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div class="grid-two-col">
+                        <div class="form-group">
+                            <label for="ppdb-jurusan-1">Pilihan Kompetensi Keahlian 1 *</label>
+                            <select id="ppdb-jurusan-1" class="form-control" required>
+                                <option value="">-- Pilih Jurusan Utama --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="ppdb-jurusan-2">Pilihan Kompetensi Keahlian 2</label>
+                            <select id="ppdb-jurusan-2" class="form-control">
+                                <option value="">-- Opsional / Jurusan Cadangan --</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid-two-col">
+                        <div class="form-group">
+                            <label for="ppdb-wa">No. WhatsApp Aktif (Siswa / Orang Tua) *</label>
+                            <input type="tel" id="ppdb-wa" class="form-control" placeholder="Contoh: 0852xxxxxxxx" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="ppdb-ortu">Nama Orang Tua / Wali *</label>
+                            <input type="text" id="ppdb-ortu" class="form-control" placeholder="Nama Ayah / Ibu / Wali" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="ppdb-alamat">Alamat Tempat Tinggal *</label>
+                        <textarea id="ppdb-alamat" class="form-control" rows="2" placeholder="Desa / Kelurahan, Kecamatan, Kabupaten" required></textarea>
+                    </div>
+
+                    <button type="submit" class="btn-primary btn-block" style="padding: 13px; font-size: 0.98rem;">
+                        <i class="ph-fill ph-paper-plane-tilt"></i> Kirim Pendaftaran & Konfirmasi WhatsApp
+                    </button>
+                </form>
+
+                <!-- KOLOM KANAN: CEK STATUS PENDAFTARAN & ALUR -->
+                <div class="ppdb-sidebar">
+                    <div class="ppdb-info-box">
+                        <h4><i class="ph-fill ph-magnifying-glass"></i> Cek Status Pendaftaran</h4>
+                        <p class="text-muted text-sm mb-3">Sudah mendaftar? Masukkan <strong>Nomor Pendaftaran</strong> atau <strong>NISN</strong> untuk melihat status verifikasi berkas.</p>
+                        <div class="check-status-row">
+                            <input type="text" id="cek-ppdb-keyword" class="form-control" placeholder="Contoh: PPDB-2026-1234 atau NISN">
+                            <button type="button" class="btn-primary btn-sm" onclick="cekStatusPPDB()">Cek</button>
+                        </div>
+                        <div id="hasil-cek-ppdb" class="cek-result-box hidden"></div>
+                    </div>
+
+                    <div class="ppdb-info-box">
+                        <h4><i class="ph-fill ph-list-checks"></i> Alur Pendaftaran Online</h4>
+                        <ol class="alur-list">
+                            <li>Lengkapi formulir pendaftaran online di samping dengan data yang valid.</li>
+                            <li>Simpan atau tangkap layar (<em>screenshot</em>) <strong>Nomor Pendaftaran</strong> yang muncul.</li>
+                            <li>Klik tombol <strong>Konfirmasi ke WhatsApp Panitia</strong> untuk validasi awal.</li>
+                            <li>Bawa fotokopi Kartu Keluarga, Akta Kelahiran, dan Surat Keterangan Lulus saat daftar ulang di sekolah.</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 
@@ -198,7 +322,7 @@
     <footer class="public-footer">
         <div class="footer-container">
             <p id="pub-footer-text">&copy; 2026 Portal Resmi Sekolah. Seluruh Hak Cipta Dilindungi.</p>
-            <span>Portal Informasi Publik Sekolah</span>
+            <span>Portal Informasi Publik & PPDB Sekolah</span>
         </div>
     </footer>
 
@@ -219,6 +343,40 @@
             <p id="read-berita-meta" class="text-muted text-sm mb-3">Tanggal • Penulis</p>
             <img id="read-berita-img" src="" alt="Gambar Kegiatan" class="read-img hidden">
             <div id="read-berita-isi" class="read-body"></div>
+        </div>
+    </div>
+
+    <!-- MODAL BUKTI PENDAFTARAN PPDB & KONFIRMASI WA -->
+    <div id="modal-sukses-ppdb" class="modal-backdrop hidden">
+        <div class="modal-box">
+            <div class="modal-header">
+                <span class="badge badge-success">Pendaftaran Berhasil Tercatat</span>
+                <button class="btn-close" onclick="closeModal('modal-sukses-ppdb')">&times;</button>
+            </div>
+            <div class="receipt-box">
+                <p class="text-muted text-sm">Nomor Pendaftaran Anda:</p>
+                <h2 id="bukti-no-ppdb" class="receipt-number">PPDB-2026-0000</h2>
+                <div class="kv-list" style="margin-top: 12px;">
+                    <div class="kv-row">
+                        <span class="kv-key">Nama Calon Siswa</span>
+                        <span class="kv-val" id="bukti-nama">-</span>
+                    </div>
+                    <div class="kv-row">
+                        <span class="kv-key">Asal Sekolah</span>
+                        <span class="kv-val" id="bukti-asal">-</span>
+                    </div>
+                    <div class="kv-row">
+                        <span class="kv-key">Pilihan Jurusan 1</span>
+                        <span class="kv-val" id="bukti-jurusan">-</span>
+                    </div>
+                </div>
+            </div>
+            <p class="text-muted text-sm" style="margin: 14px 0;">
+                Klik tombol di bawah ini untuk mengirim bukti pendaftaran langsung ke <strong>WhatsApp Panitia PPDB</strong> agar segera diverifikasi.
+            </p>
+            <a id="btn-konfirmasi-wa-ppdb" href="#" target="_blank" rel="noopener noreferrer" class="btn-wa-large btn-block" style="justify-content: center;">
+                <i class="ph-fill ph-whatsapp-logo"></i> Konfirmasi ke WhatsApp Panitia
+            </a>
         </div>
     </div>
 
