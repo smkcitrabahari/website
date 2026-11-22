@@ -1,381 +1,742 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Portal Resmi Sekolah</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMK Citra Bahari Wakatobi | Unggul dalam Vokasi, Tangguh & Berkarakter</title>
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#0f4c81">
-    <link rel="stylesheet" href="style.css">
+    <meta name="theme-color" content="#0F2942">
+    
+    <!-- Google Fonts: Inter & Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons & Supabase JS -->
+    <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
-</head>
-<body>
 
-    <!-- LOADER -->
-    <div id="global-loader" class="loader-overlay hidden">
-        <div class="spinner"></div>
-        <p id="loader-text">Memproses pendaftaran...</p>
+    <!-- Tailwind Custom Configuration -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        heading: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        navy: {
+                            800: '#1E3A8A',
+                            900: '#0F2942',
+                            950: '#091A2C',
+                        },
+                        gold: {
+                            500: '#F59E0B',
+                            600: '#D97706',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased selection:bg-amber-500 selection:text-white">
+
+    <!-- LOADER GLOBAL -->
+    <div id="global-loader" class="fixed inset-0 z-[100] hidden items-center justify-center bg-navy-950/70 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl p-6 flex flex-col items-center gap-3 shadow-2xl">
+            <div class="w-10 h-10 border-4 border-slate-200 border-t-navy-900 rounded-full animate-spin"></div>
+            <p id="loader-text" class="text-sm font-semibold text-navy-900">Memproses data...</p>
+        </div>
     </div>
 
-    <!-- TOAST -->
-    <div id="toast-container" class="toast-container"></div>
+    <!-- TOAST NOTIFIKASI -->
+    <div id="toast-container" class="fixed top-24 right-4 z-[100] flex flex-col gap-2"></div>
 
-    <!-- NAVBAR UTAMA -->
-    <nav class="public-navbar">
-        <div class="nav-container">
-            <a href="#beranda" class="brand-box">
-                <div class="brand-icon"><i class="ph-fill ph-graduation-cap"></i></div>
-                <div>
-                    <h1 id="pub-nav-title">Portal Resmi Sekolah</h1>
-                    <span id="pub-nav-subtitle">Informasi Akademik & PPDB Online</span>
+    <!-- ==================== 1. NAVBAR RESPONSIF ==================== -->
+    <header id="navbar" class="fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-white/95 backdrop-blur-md border-b border-slate-200/80">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <!-- Logo Sekolah -->
+                <a href="#beranda" class="flex items-center gap-3 group">
+                    <div class="w-11 h-11 rounded-xl bg-navy-900 flex items-center justify-center text-amber-400 shadow-md group-hover:scale-105 transition-transform">
+                        <i data-lucide="anchor" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <span id="nav-school-top" class="font-heading font-extrabold text-lg sm:text-xl text-navy-900 block leading-none tracking-tight">SMK CITRA BAHARI</span>
+                        <span id="nav-school-sub" class="text-xs font-semibold tracking-widest text-amber-600 uppercase mt-0.5 block">Wakatobi</span>
+                    </div>
+                </a>
+
+                <!-- Menu Desktop -->
+                <nav class="hidden lg:flex items-center gap-7">
+                    <a href="#beranda" class="text-sm font-medium text-slate-700 hover:text-navy-900 transition-colors">Beranda</a>
+                    <a href="#profil" class="text-sm font-medium text-slate-700 hover:text-navy-900 transition-colors">Profil</a>
+                    <a href="#jurusan" class="text-sm font-medium text-slate-700 hover:text-navy-900 transition-colors">Kompetensi Keahlian</a>
+                    <a href="#guru" class="text-sm font-medium text-slate-700 hover:text-navy-900 transition-colors">Direktori Guru</a>
+                    <a href="#berita" class="text-sm font-medium text-slate-700 hover:text-navy-900 transition-colors">Berita & Kegiatan</a>
+                    <a href="#ppdb" class="text-sm font-medium text-slate-700 hover:text-navy-900 transition-colors">PPDB Online</a>
+                </nav>
+
+                <!-- Tombol CTA & Mobile Toggle -->
+                <div class="flex items-center gap-3">
+                    <button onclick="openPpdbModal()" class="hidden sm:inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-navy-950 font-semibold text-sm px-5 py-2.5 rounded-xl shadow-sm hover:shadow transition-all">
+                        <i data-lucide="file-edit" class="w-4 h-4"></i>
+                        <span>Daftar PPDB</span>
+                    </button>
+
+                    <!-- Tombol Hamburger Mobile -->
+                    <button id="mobile-menu-btn" aria-label="Buka Menu" class="lg:hidden p-2.5 rounded-xl text-slate-700 hover:bg-slate-100 transition-colors">
+                        <i data-lucide="menu" class="w-6 h-6"></i>
+                    </button>
                 </div>
-            </a>
-
-            <div class="nav-links" id="nav-links">
-                <a href="#beranda" onclick="closeMobileNav()">Beranda</a>
-                <a href="#ppdb" onclick="closeMobileNav()">PPDB Online</a>
-                <a href="#jurusan" onclick="closeMobileNav()">Jurusan</a>
-                <a href="#berita" onclick="closeMobileNav()">Berita</a>
-                <a href="#profil" onclick="closeMobileNav()">Profil</a>
-                <a href="#guru" onclick="closeMobileNav()">Pendidik</a>
-                <a href="#kontak" onclick="closeMobileNav()">Kontak</a>
             </div>
-
-            <button class="mobile-menu-btn" onclick="toggleMobileNav()" aria-label="Menu">
-                <i class="ph ph-list"></i>
-            </button>
         </div>
-    </nav>
 
-    <!-- HERO BANNER -->
-    <header id="beranda" class="hero-section">
-        <div class="hero-container">
-            <span class="hero-pill" id="hero-ppdb-pill">Penerimaan Peserta Didik Baru Dibuka</span>
-            <h2 id="pub-hero-title">Selamat Datang di Portal Informasi Sekolah</h2>
-            <p id="pub-hero-desc">Media informasi resmi kompetensi keahlian, pendaftaran peserta didik baru (PPDB), kegiatan pembelajaran, direktori pendidik, dan layanan komunikasi masyarakat.</p>
-            <div class="hero-actions">
-                <a href="#ppdb" class="btn-light">
-                    <i class="ph-fill ph-user-plus"></i> Daftar PPDB Online
-                </a>
-                <a id="hero-wa-btn" href="https://wa.me/6285298875399" target="_blank" rel="noopener noreferrer" class="btn-wa-hero">
-                    <i class="ph-fill ph-whatsapp-logo"></i> Hubungi via WhatsApp
-                </a>
+        <!-- Menu Mobile Dropdown -->
+        <div id="mobile-menu" class="hidden lg:hidden bg-white border-b border-slate-200 px-4 pt-2 pb-6 space-y-2 shadow-xl">
+            <a href="#beranda" class="mobile-link block px-4 py-3 rounded-xl text-base font-medium text-slate-700 hover:bg-slate-50 hover:text-navy-900">Beranda</a>
+            <a href="#profil" class="mobile-link block px-4 py-3 rounded-xl text-base font-medium text-slate-700 hover:bg-slate-50 hover:text-navy-900">Profil & Kalender Akademik</a>
+            <a href="#jurusan" class="mobile-link block px-4 py-3 rounded-xl text-base font-medium text-slate-700 hover:bg-slate-50 hover:text-navy-900">Kompetensi Keahlian</a>
+            <a href="#guru" class="mobile-link block px-4 py-3 rounded-xl text-base font-medium text-slate-700 hover:bg-slate-50 hover:text-navy-900">Direktori Pendidik</a>
+            <a href="#berita" class="mobile-link block px-4 py-3 rounded-xl text-base font-medium text-slate-700 hover:bg-slate-50 hover:text-navy-900">Berita & Pengumuman</a>
+            <a href="#ppdb" class="mobile-link block px-4 py-3 rounded-xl text-base font-medium text-slate-700 hover:bg-slate-50 hover:text-navy-900">PPDB Online</a>
+            <div class="pt-2">
+                <button onclick="openPpdbModal()" class="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 text-navy-950 font-bold text-base px-5 py-3.5 rounded-xl shadow">
+                    <i data-lucide="file-edit" class="w-5 h-5"></i>
+                    <span>Daftar PPDB Online</span>
+                </button>
             </div>
         </div>
     </header>
 
-    <!-- STATISTIK SEKOLAH -->
-    <section class="container-box stats-floating">
-        <div class="stats-grid">
-            <div class="stat-card blue">
-                <div class="stat-icon"><i class="ph-fill ph-users-three"></i></div>
-                <div class="stat-info">
-                    <span class="stat-label">Peserta Didik Aktif</span>
-                    <h4 id="pub-stat-siswa">-</h4>
+    <!-- ==================== 2. HERO SECTION ==================== -->
+    <section id="beranda" class="relative pt-28 pb-20 lg:pt-36 lg:pb-28 bg-navy-900 text-white overflow-hidden">
+        <!-- Dekorasi Latar Belakang Abstrak -->
+        <div class="absolute inset-0 opacity-10 pointer-events-none">
+            <div class="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-amber-400 blur-3xl"></div>
+            <div class="absolute bottom-0 left-10 w-80 h-80 rounded-full bg-blue-400 blur-3xl"></div>
+        </div>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="grid lg:grid-cols-12 gap-12 items-center">
+                <!-- Kolom Teks Utama -->
+                <div class="lg:col-span-7 space-y-6 text-center lg:text-left">
+                    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/15 text-amber-300 text-xs sm:text-sm font-medium backdrop-blur-sm">
+                        <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                        <span id="hero-ppdb-pill">Penerimaan Peserta Didik Baru (PPDB) TA 2026/2027 Dibuka</span>
+                    </div>
+
+                    <h1 class="font-heading text-3xl sm:text-5xl lg:text-6xl font-extrabold leading-tight tracking-tight">
+                        Mencetak Lulusan <span class="text-amber-400">Vokasi</span> Unggul, Kompeten & Siap Kerja
+                    </h1>
+
+                    <p id="hero-desc-text" class="text-slate-300 text-base sm:text-lg max-w-2xl mx-auto lg:mx-0 leading-relaxed">
+                        SMK Citra Bahari Wakatobi memadukan kurikulum merdeka berbasis industri dengan penguasaan keterampilan kejuruan, teknologi digital, dan pembentukan karakter berakhlak mulia.
+                    </p>
+
+                    <!-- Tombol Aksi Utama -->
+                    <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
+                        <a href="#ppdb" class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-amber-500 hover:bg-amber-400 text-navy-950 font-bold px-7 py-4 rounded-xl shadow-lg shadow-amber-500/20 transition-all transform hover:-translate-y-0.5">
+                            <i data-lucide="sparkles" class="w-5 h-5"></i>
+                            <span>Daftar PPDB Online</span>
+                        </a>
+                        <a id="hero-wa-btn" href="https://wa.me/6285298875399" target="_blank" rel="noopener noreferrer" class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold px-7 py-4 rounded-xl backdrop-blur-sm transition-all">
+                            <i data-lucide="message-circle" class="w-5 h-5 text-emerald-400"></i>
+                            <span>Hubungi via WhatsApp</span>
+                        </a>
+                    </div>
+
+                    <!-- Statistik Dinamis dari Database -->
+                    <div class="grid grid-cols-3 gap-4 sm:gap-6 pt-8 border-t border-white/15">
+                        <div>
+                            <div id="stat-siswa-aktif" class="font-heading font-extrabold text-2xl sm:text-3xl text-amber-400">-</div>
+                            <p class="text-xs sm:text-sm text-slate-300 mt-1">Peserta Didik Aktif</p>
+                        </div>
+                        <div>
+                            <div id="stat-guru-aktif" class="font-heading font-extrabold text-2xl sm:text-3xl text-white">-</div>
+                            <p class="text-xs sm:text-sm text-slate-300 mt-1">Pendidik & Staf</p>
+                        </div>
+                        <div>
+                            <div id="stat-rombel-aktif" class="font-heading font-extrabold text-2xl sm:text-3xl text-amber-400">-</div>
+                            <p class="text-xs sm:text-sm text-slate-300 mt-1">Rombongan Belajar</p>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <div class="stat-card teal">
-                <div class="stat-icon"><i class="ph-fill ph-chalkboard-teacher"></i></div>
-                <div class="stat-info">
-                    <span class="stat-label">Pendidik & Staf</span>
-                    <h4 id="pub-stat-guru">-</h4>
-                </div>
-            </div>
-            <div class="stat-card green">
-                <div class="stat-icon"><i class="ph-fill ph-books"></i></div>
-                <div class="stat-info">
-                    <span class="stat-label">Mata Pelajaran</span>
-                    <h4 id="pub-stat-mapel">-</h4>
-                </div>
-            </div>
-            <div class="stat-card orange">
-                <div class="stat-icon"><i class="ph-fill ph-buildings"></i></div>
-                <div class="stat-info">
-                    <span class="stat-label">Rombongan Belajar</span>
-                    <h4 id="pub-stat-kelas">-</h4>
+
+                <!-- Kolom Visual / Kartu Kampus -->
+                <div class="lg:col-span-5 relative">
+                    <div class="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-white/15 bg-navy-800">
+                        <img 
+                            src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=900&q=80" 
+                            alt="Kampus SMK Citra Bahari Wakatobi" 
+                            onerror="this.src='https://placehold.co/800x600/1E3A8A/FFFFFF?text=SMK+Citra+Bahari+Wakatobi'"
+                            class="w-full h-[360px] sm:h-[440px] object-cover"
+                        >
+                        <div class="absolute inset-0 bg-gradient-to-t from-navy-950/90 via-navy-950/20 to-transparent"></div>
+                        
+                        <!-- Floating Card Keunggulan -->
+                        <div class="absolute bottom-5 left-5 right-5 bg-white/95 backdrop-blur-md text-navy-900 p-4 rounded-xl shadow-lg flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+                                <i data-lucide="award" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold uppercase tracking-wider text-amber-600">Pendidikan Vokasi Wakatobi</p>
+                                <p class="font-heading font-bold text-sm sm:text-base text-navy-900">Pembelajaran Praktik Industri & Kewirausahaan</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- KOMPETENSI KEAHLIAN (JURUSAN) -->
-    <section id="jurusan" class="pub-section container-box">
-        <div class="section-header-row">
-            <div>
-                <h3 class="section-heading">Kompetensi Keahlian (Jurusan)</h3>
-                <p class="text-muted text-sm">Program keahlian vokasi aktif beserta sebaran rombongan belajar dan peserta didik.</p>
-            </div>
-        </div>
+    <!-- ==================== 3. SAMBUTAN, IDENTITAS SEKOLAH & KALENDER LIBUR ==================== -->
+    <section id="profil" class="py-20 lg:py-28 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid lg:grid-cols-12 gap-12 items-start">
+                <!-- Kolom Kiri: Sambutan & Visi Misi -->
+                <div class="lg:col-span-7 space-y-6">
+                    <div class="inline-flex items-center gap-2 text-amber-600 font-semibold text-sm uppercase tracking-wider">
+                        <i data-lucide="award" class="w-4 h-4"></i>
+                        <span>Profil & Sambutan Sekolah</span>
+                    </div>
 
-        <div id="jurusan-grid" class="jurusan-grid">
-            <p class="text-muted text-sm">Memuat daftar kompetensi keahlian...</p>
+                    <h2 class="font-heading text-3xl sm:text-4xl font-extrabold text-navy-900 leading-tight">
+                        Membentuk Ekosistem Vokasi yang Adaptif, Terampil & Berkarakter
+                    </h2>
+
+                    <blockquote class="border-l-4 border-amber-500 pl-5 py-2 italic text-slate-600 text-base sm:text-lg bg-slate-50 rounded-r-xl pr-4">
+                        "Sekolah Menengah Kejuruan hadir untuk membekali generasi muda Wakatobi dengan keterampilan nyata, etos kerja profesional, dan kemandirian berwirausaha."
+                    </blockquote>
+
+                    <p class="text-slate-600 leading-relaxed">
+                        Assalamu’alaikum Warahmatullahi Wabarakatuh. Selamat datang di portal informasi resmi <strong id="profil-nama-sekolah">SMK Citra Bahari Wakatobi</strong>. Kami berkomitmen menyelenggarakan pendidikan kejuruan yang relevan dengan kebutuhan dunia usaha, dunia industri, dan potensi maritim maupun teknologi di Kabupaten Wakatobi.
+                    </p>
+
+                    <!-- Grid Visi & Misi -->
+                    <div class="grid sm:grid-cols-2 gap-5 pt-2">
+                        <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                            <div class="w-10 h-10 rounded-xl bg-navy-900 text-amber-400 flex items-center justify-center mb-3">
+                                <i data-lucide="compass" class="w-5 h-5"></i>
+                            </div>
+                            <h3 class="font-heading font-bold text-navy-900 text-lg mb-2">Visi Sekolah</h3>
+                            <p id="profil-visi-text" class="text-sm text-slate-600 leading-relaxed">
+                                Mewujudkan lulusan yang kompeten, berkarakter mulia, literat digital, dan siap bersaing di dunia kerja maupun berwirausaha.
+                            </p>
+                        </div>
+
+                        <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                            <div class="w-10 h-10 rounded-xl bg-amber-500 text-navy-950 flex items-center justify-center mb-3">
+                                <i data-lucide="target" class="w-5 h-5"></i>
+                            </div>
+                            <h3 class="font-heading font-bold text-navy-900 text-lg mb-2">Misi Utama</h3>
+                            <ul class="text-sm text-slate-600 space-y-1.5">
+                                <li class="flex items-start gap-2">
+                                    <i data-lucide="check-circle-2" class="w-4 h-4 text-amber-600 shrink-0 mt-0.5"></i>
+                                    <span>Pembelajaran praktik berbasis proyek & industri</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <i data-lucide="check-circle-2" class="w-4 h-4 text-amber-600 shrink-0 mt-0.5"></i>
+                                    <span>Penguatan literasi teknologi & karakter disiplin</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <i data-lucide="check-circle-2" class="w-4 h-4 text-amber-600 shrink-0 mt-0.5"></i>
+                                    <span>Pengembangan jiwa kewirausahaan muda</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Kolom Kanan: Identitas Resmi & Kalender Libur dari Database -->
+                <div class="lg:col-span-5 space-y-6">
+                    <!-- Kartu Identitas dari tabel pengaturan -->
+                    <div class="bg-slate-50 border border-slate-200/90 rounded-2xl p-6 shadow-sm">
+                        <h3 class="font-heading font-bold text-lg text-navy-900 flex items-center gap-2 mb-4">
+                            <i data-lucide="building-2" class="w-5 h-5 text-amber-600"></i>
+                            <span>Identitas Resmi Sekolah</span>
+                        </h3>
+                        <div id="pub-identitas-list" class="space-y-2.5 text-sm">
+                            <p class="text-slate-500">Memuat data identitas sekolah...</p>
+                        </div>
+                    </div>
+
+                    <!-- Kartu Kalender Libur dari tabel hari_libur -->
+                    <div class="bg-navy-900 text-white rounded-2xl p-6 shadow-lg">
+                        <h3 class="font-heading font-bold text-lg flex items-center gap-2 mb-3">
+                            <i data-lucide="calendar-days" class="w-5 h-5 text-amber-400"></i>
+                            <span>Kalender Libur Akademik</span>
+                        </h3>
+                        <p class="text-xs text-slate-300 mb-4">Jadwal libur resmi yang berlaku di lingkungan sekolah.</p>
+                        <div id="pub-libur-list" class="space-y-2.5 max-h-60 overflow-y-auto pr-1">
+                            <p class="text-xs text-slate-300">Memuat jadwal libur...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 
-    <!-- ================= FORMULIR PPDB ONLINE & CEK STATUS ================= -->
-    <section id="ppdb" class="pub-section container-box">
-        <div class="ppdb-wrapper">
-            <div class="ppdb-header-banner">
+    <!-- ==================== 4. KOMPETENSI KEAHLIAN (JURUSAN DINAMIS) ==================== -->
+    <section id="jurusan" class="py-20 lg:py-28 bg-slate-50 border-t border-slate-200/70">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-12">
+                <span class="text-amber-600 font-semibold text-sm uppercase tracking-wider">Program Keahlian Vokasi</span>
+                <h2 class="font-heading text-3xl sm:text-4xl font-extrabold text-navy-900 mt-2">
+                    Kompetensi Keahlian (Jurusan)
+                </h2>
+                <p class="text-slate-600 mt-3 text-base sm:text-lg">
+                    Pilihan program keahlian aktif beserta sebaran rombongan belajar dan peserta didik di SMK Citra Bahari Wakatobi.
+                </p>
+            </div>
+
+            <!-- Grid Kartu Jurusan (Dirender otomatis dari data kelas siswa & pengaturan) -->
+            <div id="jurusan-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <p class="text-slate-500 text-sm col-span-full text-center">Memuat kompetensi keahlian...</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== 5. DIREKTORI PENDIDIK & TENAGA KEPENDIDIKAN ==================== -->
+    <section id="guru" class="py-20 lg:py-28 bg-white border-t border-slate-200/70">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
                 <div>
-                    <span class="ppdb-tag" id="ppdb-ta-badge">PPDB Tahun Ajaran 2026/2027</span>
-                    <h3>Formulir Pendaftaran Peserta Didik Baru (PPDB)</h3>
-                    <p>Isi data calon peserta didik dengan benar sesuai Ijazah / Kartu Keluarga, lalu kirim konfirmasi langsung ke WhatsApp Panitia PPDB.</p>
+                    <span class="text-amber-600 font-semibold text-sm uppercase tracking-wider">Tenaga Pengajar Profesional</span>
+                    <h2 class="font-heading text-3xl sm:text-4xl font-extrabold text-navy-900 mt-2">
+                        Direktori Pendidik & Staf
+                    </h2>
                 </div>
-                <div class="ppdb-counter-box">
-                    <span>Total Pendaftar Online</span>
-                    <strong id="ppdb-total-pendaftar">0</strong>
+                <div class="relative w-full md:w-80">
+                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                    <input type="text" id="pub-search-guru" oninput="renderPublikGuru()" placeholder="Cari nama guru atau mapel..." class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-navy-800">
                 </div>
             </div>
 
-            <div class="ppdb-body-grid">
-                <!-- KOLOM KIRI: FORMULIR PENDAFTARAN -->
-                <form id="form-ppdb" class="ppdb-form" onsubmit="submitFormPPDB(event)">
-                    <div class="grid-two-col">
-                        <div class="form-group">
-                            <label for="ppdb-nama">Nama Lengkap Calon Siswa *</label>
-                            <input type="text" id="ppdb-nama" class="form-control" placeholder="Sesuai akta kelahiran / ijazah" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="ppdb-nisn">NISN (10 Digit)</label>
-                            <input type="text" id="ppdb-nisn" class="form-control" maxlength="10" placeholder="Contoh: 0091234567">
-                        </div>
-                    </div>
-
-                    <div class="grid-two-col">
-                        <div class="form-group">
-                            <label for="ppdb-jk">Jenis Kelamin *</label>
-                            <select id="ppdb-jk" class="form-control" required>
-                                <option value="">-- Pilih Jenis Kelamin --</option>
-                                <option value="Laki-laki">Laki-laki</option>
-                                <option value="Perempuan">Perempuan</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="ppdb-asal-sekolah">Asal Sekolah (SMP / MTs) *</label>
-                            <input type="text" id="ppdb-asal-sekolah" class="form-control" placeholder="Contoh: SMP Negeri 1 Wangi-Wangi" required>
-                        </div>
-                    </div>
-
-                    <div class="grid-two-col">
-                        <div class="form-group">
-                            <label for="ppdb-tempat-lahir">Tempat Lahir *</label>
-                            <input type="text" id="ppdb-tempat-lahir" class="form-control" placeholder="Kota / Kabupaten lahir" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="ppdb-tanggal-lahir">Tanggal Lahir *</label>
-                            <input type="date" id="ppdb-tanggal-lahir" class="form-control" required>
-                        </div>
-                    </div>
-
-                    <div class="grid-two-col">
-                        <div class="form-group">
-                            <label for="ppdb-jurusan-1">Pilihan Kompetensi Keahlian 1 *</label>
-                            <select id="ppdb-jurusan-1" class="form-control" required>
-                                <option value="">-- Pilih Jurusan Utama --</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="ppdb-jurusan-2">Pilihan Kompetensi Keahlian 2</label>
-                            <select id="ppdb-jurusan-2" class="form-control">
-                                <option value="">-- Opsional / Jurusan Cadangan --</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="grid-two-col">
-                        <div class="form-group">
-                            <label for="ppdb-wa">No. WhatsApp Aktif (Siswa / Orang Tua) *</label>
-                            <input type="tel" id="ppdb-wa" class="form-control" placeholder="Contoh: 0852xxxxxxxx" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="ppdb-ortu">Nama Orang Tua / Wali *</label>
-                            <input type="text" id="ppdb-ortu" class="form-control" placeholder="Nama Ayah / Ibu / Wali" required>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="ppdb-alamat">Alamat Tempat Tinggal *</label>
-                        <textarea id="ppdb-alamat" class="form-control" rows="2" placeholder="Desa / Kelurahan, Kecamatan, Kabupaten" required></textarea>
-                    </div>
-
-                    <button type="submit" class="btn-primary btn-block" style="padding: 13px; font-size: 0.98rem;">
-                        <i class="ph-fill ph-paper-plane-tilt"></i> Kirim Pendaftaran & Konfirmasi WhatsApp
-                    </button>
-                </form>
-
-                <!-- KOLOM KANAN: CEK STATUS PENDAFTARAN & ALUR -->
-                <div class="ppdb-sidebar">
-                    <div class="ppdb-info-box">
-                        <h4><i class="ph-fill ph-magnifying-glass"></i> Cek Status Pendaftaran</h4>
-                        <p class="text-muted text-sm mb-3">Sudah mendaftar? Masukkan <strong>Nomor Pendaftaran</strong> atau <strong>NISN</strong> untuk melihat status verifikasi berkas.</p>
-                        <div class="check-status-row">
-                            <input type="text" id="cek-ppdb-keyword" class="form-control" placeholder="Contoh: PPDB-2026-1234 atau NISN">
-                            <button type="button" class="btn-primary btn-sm" onclick="cekStatusPPDB()">Cek</button>
-                        </div>
-                        <div id="hasil-cek-ppdb" class="cek-result-box hidden"></div>
-                    </div>
-
-                    <div class="ppdb-info-box">
-                        <h4><i class="ph-fill ph-list-checks"></i> Alur Pendaftaran Online</h4>
-                        <ol class="alur-list">
-                            <li>Lengkapi formulir pendaftaran online di samping dengan data yang valid.</li>
-                            <li>Simpan atau tangkap layar (<em>screenshot</em>) <strong>Nomor Pendaftaran</strong> yang muncul.</li>
-                            <li>Klik tombol <strong>Konfirmasi ke WhatsApp Panitia</strong> untuk validasi awal.</li>
-                            <li>Bawa fotokopi Kartu Keluarga, Akta Kelahiran, dan Surat Keterangan Lulus saat daftar ulang di sekolah.</li>
-                        </ol>
-                    </div>
+            <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead>
+                            <tr class="bg-navy-900 text-white">
+                                <th class="py-3.5 px-5 font-semibold">Nama Pendidik</th>
+                                <th class="py-3.5 px-5 font-semibold">Jabatan</th>
+                                <th class="py-3.5 px-5 font-semibold">Mata Pelajaran Diampu</th>
+                                <th class="py-3.5 px-5 font-semibold">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pub-guru-tbody" class="divide-y divide-slate-200/80">
+                            <tr><td colspan="4" class="py-6 text-center text-slate-500">Memuat data pendidik...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- BERITA & KEGIATAN SEKOLAH -->
-    <section id="berita" class="pub-section container-box">
-        <div class="section-header-row">
-            <div>
-                <h3 class="section-heading">Berita, Pengumuman & Kegiatan</h3>
-                <p class="text-muted text-sm">Kabar terbaru seputar aktivitas pembelajaran, prestasi, dan agenda sekolah.</p>
-            </div>
-            <div class="filter-pills">
-                <button class="pill-btn active" onclick="filterBerita('Semua', this)">Semua</button>
-                <button class="pill-btn" onclick="filterBerita('Kegiatan', this)">Kegiatan</button>
-                <button class="pill-btn" onclick="filterBerita('Pengumuman', this)">Pengumuman</button>
-                <button class="pill-btn" onclick="filterBerita('Prestasi', this)">Prestasi</button>
-            </div>
-        </div>
-
-        <div id="berita-grid" class="news-grid">
-            <p class="text-muted">Memuat berita & kegiatan sekolah...</p>
-        </div>
-    </section>
-
-    <!-- PROFIL SEKOLAH & KALENDER LIBUR -->
-    <section id="profil" class="pub-section container-box">
-        <div class="grid-two-col">
-            <div class="section-card">
-                <h3 class="card-title"><i class="ph-fill ph-buildings"></i> Identitas & Profil Sekolah</h3>
-                <div id="pub-identitas-list" class="kv-list">
-                    <p class="text-muted text-sm">Memuat profil sekolah...</p>
-                </div>
-            </div>
-
-            <div class="section-card">
-                <h3 class="card-title"><i class="ph-fill ph-calendar-blank"></i> Kalender Libur Akademik</h3>
-                <p class="text-muted text-sm mb-3">Jadwal libur resmi yang berlaku di lingkungan sekolah.</p>
-                <div id="pub-libur-list" class="list-stack">
-                    <p class="text-muted text-sm">Memuat jadwal libur...</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- DIREKTORI PENDIDIK -->
-    <section id="guru" class="pub-section container-box">
-        <div class="section-card">
-            <div class="card-header-flex">
+    <!-- ==================== 6. PENGUMUMAN & BERITA SEKOLAH (DARI SUPABASE) ==================== -->
+    <section id="berita" class="py-20 lg:py-28 bg-slate-50 border-t border-slate-200/70">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
                 <div>
-                    <h3 class="card-title"><i class="ph-fill ph-chalkboard-teacher"></i> Direktori Pendidik & Tenaga Kependidikan</h3>
-                    <p class="text-muted text-sm">Daftar guru pengampu mata pelajaran aktif.</p>
+                    <span class="text-amber-600 font-semibold text-sm uppercase tracking-wider">Kabar & Dokumentasi Terkini</span>
+                    <h2 class="font-heading text-3xl sm:text-4xl font-extrabold text-navy-900 mt-2">
+                        Berita & Pengumuman Sekolah
+                    </h2>
                 </div>
-                <input type="text" id="pub-search-guru" class="form-control" style="max-width: 260px;" placeholder="Cari nama guru atau mapel..." oninput="renderPublikGuru()">
+                <!-- Filter Kategori Berita -->
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="filterBerita('Semua', this)" class="news-filter-btn active px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-navy-900 text-white shadow-sm transition-all">Semua</button>
+                    <button onclick="filterBerita('Kegiatan', this)" class="news-filter-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 transition-all">Kegiatan</button>
+                    <button onclick="filterBerita('Pengumuman', this)" class="news-filter-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 transition-all">Pengumuman</button>
+                    <button onclick="filterBerita('Prestasi', this)" class="news-filter-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 transition-all">Prestasi</button>
+                </div>
             </div>
-            <div class="table-responsive">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Nama Pendidik</th>
-                            <th>Jabatan</th>
-                            <th>Mata Pelajaran Diampu</th>
-                            <th>Status Kepegawaian</th>
-                        </tr>
-                    </thead>
-                    <tbody id="pub-guru-tbody">
-                        <tr><td colspan="4" class="text-center">Memuat data pendidik...</td></tr>
-                    </tbody>
-                </table>
+
+            <!-- Grid Kartu Berita dari tabel berita_sekolah -->
+            <div id="berita-grid" class="grid md:grid-cols-3 gap-8">
+                <p class="text-slate-500 text-sm col-span-full text-center">Memuat berita & kegiatan sekolah...</p>
             </div>
         </div>
     </section>
 
-    <!-- KONTAK RESMI & LAYANAN WHATSAPP -->
-    <section id="kontak" class="pub-section container-box">
-        <div class="contact-banner">
-            <div class="contact-info">
-                <span class="contact-tag">Layanan Informasi & Pengaduan</span>
-                <h3>Hubungi Layanan Resmi Sekolah</h3>
-                <p>Memiliki pertanyaan seputar pendaftaran peserta didik baru, pilihan kompetensi keahlian, surat keterangan, atau informasi kegiatan sekolah? Silakan hubungi tata usaha kami langsung melalui WhatsApp.</p>
-                <div class="contact-meta">
-                    <div><i class="ph-fill ph-map-pin"></i> <span id="contact-alamat">Lokasi Sekolah</span></div>
-                    <div><i class="ph-fill ph-whatsapp-logo"></i> <span id="contact-wa-text">-</span></div>
+    <!-- ==================== 7. INFORMASI PPDB, FORMULIR ONLINE & CEK STATUS ==================== -->
+    <section id="ppdb" class="py-20 lg:py-28 bg-white border-t border-slate-200/70">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-14">
+                <span id="ppdb-ta-badge" class="inline-flex items-center gap-1.5 bg-amber-100 text-amber-800 font-bold text-xs uppercase tracking-wider px-3.5 py-1.5 rounded-full">
+                    Tahun Ajaran 2026 / 2027
+                </span>
+                <h2 class="font-heading text-3xl sm:text-4xl font-extrabold text-navy-900 mt-3">
+                    Pendaftaran Peserta Didik Baru (PPDB Online)
+                </h2>
+                <p class="text-slate-600 mt-3 text-base sm:text-lg">
+                    Daftarkan diri Anda secara daring dengan mudah. Data tersimpan otomatis dan dapat langsung dikonfirmasi ke WhatsApp Panitia PPDB.
+                </p>
+            </div>
+
+            <!-- Alur Pendaftaran 4 Langkah -->
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-14">
+                <div class="p-6 rounded-2xl bg-slate-50 border border-slate-200">
+                    <span class="w-9 h-9 rounded-xl bg-navy-900 text-amber-400 font-heading font-bold flex items-center justify-center text-sm mb-4">01</span>
+                    <h3 class="font-heading font-bold text-navy-900 text-lg mb-2">Isi Formulir Online</h3>
+                    <p class="text-sm text-slate-600">Lengkapi biodata calon peserta didik dan pilih kompetensi keahlian yang diminati.</p>
+                </div>
+
+                <div class="p-6 rounded-2xl bg-slate-50 border border-slate-200">
+                    <span class="w-9 h-9 rounded-xl bg-navy-900 text-amber-400 font-heading font-bold flex items-center justify-center text-sm mb-4">02</span>
+                    <h3 class="font-heading font-bold text-navy-900 text-lg mb-2">Simpan Nomor Registrasi</h3>
+                    <p class="text-sm text-slate-600">Catat kode pendaftaran otomatis (contoh: PPDB-2026-XXXX) untuk mengecek status.</p>
+                </div>
+
+                <div class="p-6 rounded-2xl bg-slate-50 border border-slate-200">
+                    <span class="w-9 h-9 rounded-xl bg-navy-900 text-amber-400 font-heading font-bold flex items-center justify-center text-sm mb-4">03</span>
+                    <h3 class="font-heading font-bold text-navy-900 text-lg mb-2">Konfirmasi WhatsApp</h3>
+                    <p class="text-sm text-slate-600">Kirim bukti pendaftaran langsung ke nomor resmi Panitia PPDB melalui WhatsApp.</p>
+                </div>
+
+                <div class="p-6 rounded-2xl bg-slate-50 border border-slate-200">
+                    <span class="w-9 h-9 rounded-xl bg-amber-500 text-navy-950 font-heading font-bold flex items-center justify-center text-sm mb-4">04</span>
+                    <h3 class="font-heading font-bold text-navy-900 text-lg mb-2">Verifikasi Berkas Fisik</h3>
+                    <p class="text-sm text-slate-600">Bawa fotokopi KK, Akta Kelahiran, dan SKL/Ijazah saat daftar ulang di sekolah.</p>
                 </div>
             </div>
-            <div class="contact-action">
-                <a id="section-wa-btn" href="https://wa.me/6285298875399" target="_blank" rel="noopener noreferrer" class="btn-wa-large">
-                    <i class="ph-fill ph-whatsapp-logo"></i> Chat WhatsApp Sekarang
-                </a>
+
+            <!-- Grid: Sidebar Info & Cek Status + Formulir Pendaftaran Utama -->
+            <div class="grid lg:grid-cols-12 gap-10 items-start">
+                <!-- Kolom Kiri: Counter, Cek Status & Kontak Panitia -->
+                <div class="lg:col-span-5 space-y-6">
+                    <!-- Kartu Total Pendaftar & Kontak -->
+                    <div class="bg-navy-900 text-white rounded-2xl p-7 shadow-xl">
+                        <div class="flex items-center justify-between pb-5 mb-5 border-b border-white/15">
+                            <div>
+                                <span class="text-xs uppercase tracking-wider text-amber-400 font-bold">Statistik Real-Time</span>
+                                <h3 class="font-heading font-bold text-xl mt-0.5">Pendaftar PPDB Online</h3>
+                            </div>
+                            <div class="bg-white/10 border border-white/20 px-4 py-2 rounded-xl text-center">
+                                <span id="ppdb-total-pendaftar" class="font-heading font-extrabold text-2xl text-amber-400 block leading-none">0</span>
+                                <span class="text-[11px] text-slate-300">Siswa</span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3 text-sm text-slate-300">
+                            <p class="flex items-start gap-2.5">
+                                <i data-lucide="check-circle" class="w-4 h-4 text-amber-400 shrink-0 mt-1"></i>
+                                <span>Gratis biaya formulir pendaftaran online.</span>
+                            </p>
+                            <p class="flex items-start gap-2.5">
+                                <i data-lucide="check-circle" class="w-4 h-4 text-amber-400 shrink-0 mt-1"></i>
+                                <span>Tersedia pilihan kompetensi keahlian sesuai minat dan bakat.</span>
+                            </p>
+                            <p class="flex items-start gap-2.5">
+                                <i data-lucide="phone-call" class="w-4 h-4 text-amber-400 shrink-0 mt-1"></i>
+                                <span>Hotline Panitia PPDB: <strong id="ppdb-hotline-text" class="text-white">+6285298875399</strong></span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Kartu Cek Status Pendaftaran Mandiri -->
+                    <div class="bg-slate-50 border border-slate-200 rounded-2xl p-6 shadow-sm">
+                        <h3 class="font-heading font-bold text-lg text-navy-900 flex items-center gap-2 mb-2">
+                            <i data-lucide="search-check" class="w-5 h-5 text-amber-600"></i>
+                            <span>Cek Status Pendaftaran</span>
+                        </h3>
+                        <p class="text-xs sm:text-sm text-slate-600 mb-4">
+                            Sudah mengisi formulir? Masukkan <strong>Nomor Pendaftaran</strong> atau <strong>NISN</strong> untuk memantau status verifikasi.
+                        </p>
+                        <div class="flex gap-2">
+                            <input type="text" id="cek-ppdb-keyword" placeholder="Contoh: PPDB-2026-1234 atau NISN" class="flex-1 px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-navy-800">
+                            <button type="button" onclick="cekStatusPPDB()" class="bg-navy-900 hover:bg-navy-800 text-white font-semibold text-sm px-4 py-2.5 rounded-xl transition-colors">
+                                Cek
+                            </button>
+                        </div>
+                        <div id="hasil-cek-ppdb" class="hidden mt-4 p-4 rounded-xl bg-white border border-slate-200 text-sm"></div>
+                    </div>
+                </div>
+
+                <!-- Kolom Kanan: Formulir Pendaftaran Online (Terhubung ke Supabase) -->
+                <div class="lg:col-span-7">
+                    <div class="bg-slate-50 border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm">
+                        <div class="mb-6">
+                            <h3 class="font-heading font-bold text-2xl text-navy-900">Formulir Pendaftaran Calon Siswa</h3>
+                            <p class="text-sm text-slate-600 mt-1">Lengkapi data di bawah ini dengan benar sesuai Ijazah / Kartu Keluarga.</p>
+                        </div>
+
+                        <form id="form-ppdb" onsubmit="submitFormPPDB(event)" class="space-y-4">
+                            <div class="grid sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="ppdb-nama" class="block text-sm font-semibold text-navy-900 mb-1.5">Nama Lengkap Calon Siswa *</label>
+                                    <input type="text" id="ppdb-nama" required placeholder="Sesuai akta kelahiran / ijazah" class="w-full px-4 py-3 rounded-xl bg-white border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-navy-800">
+                                </div>
+                                <div>
+                                    <label for="ppdb-nisn" class="block text-sm font-semibold text-navy-900 mb-1.5">NISN (10 Digit)</label>
+                                    <input type="text" id="ppdb-nisn" maxlength="10" placeholder="Contoh: 0091234567" class="w-full px-4 py-3 rounded-xl bg-white border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-navy-800">
+                                </div>
+                            </div>
+
+                            <div class="grid sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="ppdb-jk" class="block text-sm font-semibold text-navy-900 mb-1.5">Jenis Kelamin *</label>
+                                    <select id="ppdb-jk" required class="w-full px-4 py-3 rounded-xl bg-white border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-navy-800">
+                                        <option value="">-- Pilih Jenis Kelamin --</option>
+                                        <option value="Laki-laki">Laki-laki</option>
+                                        <option value="Perempuan">Perempuan</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="ppdb-asal-sekolah" class="block text-sm font-semibold text-navy-900 mb-1.5">Asal Sekolah (SMP / MTs) *</label>
+                                    <input type="text" id="ppdb-asal-sekolah" required placeholder="Contoh: SMP Negeri 1 Wangi-Wangi" class="w-full px-4 py-3 rounded-xl bg-white border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-navy-800">
+                                </div>
+                            </div>
+
+                            <div class="grid sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="ppdb-tempat-lahir" class="block text-sm font-semibold text-navy-900 mb-1.5">Tempat Lahir *</label>
+                                    <input type="text" id="ppdb-tempat-lahir" required placeholder="Kota / Kabupaten lahir" class="w-full px-4 py-3 rounded-xl bg-white border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-navy-800">
+                                </div>
+                                <div>
+                                    <label for="ppdb-tanggal-lahir" class="block text-sm font-semibold text-navy-900 mb-1.5">Tanggal Lahir *</label>
+                                    <input type="date" id="ppdb-tanggal-lahir" required class="w-full px-4 py-3 rounded-xl bg-white border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-navy-800">
+                                </div>
+                            </div>
+
+                            <div class="grid sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="ppdb-jurusan-1" class="block text-sm font-semibold text-navy-900 mb-1.5">Pilihan Kompetensi Keahlian 1 *</label>
+                                    <select id="ppdb-jurusan-1" required class="w-full px-4 py-3 rounded-xl bg-white border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-navy-800">
+                                        <option value="">-- Pilih Jurusan Utama --</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="ppdb-jurusan-2" class="block text-sm font-semibold text-navy-900 mb-1.5">Pilihan Kompetensi Keahlian 2</label>
+                                    <select id="ppdb-jurusan-2" class="w-full px-4 py-3 rounded-xl bg-white border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-navy-800">
+                                        <option value="">-- Opsional / Jurusan Cadangan --</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="grid sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="ppdb-wa" class="block text-sm font-semibold text-navy-900 mb-1.5">No. WhatsApp Aktif (Siswa/Ortu) *</label>
+                                    <input type="tel" id="ppdb-wa" required placeholder="Contoh: 0852xxxxxxxx" class="w-full px-4 py-3 rounded-xl bg-white border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-navy-800">
+                                </div>
+                                <div>
+                                    <label for="ppdb-ortu" class="block text-sm font-semibold text-navy-900 mb-1.5">Nama Orang Tua / Wali *</label>
+                                    <input type="text" id="ppdb-ortu" required placeholder="Nama Ayah / Ibu / Wali" class="w-full px-4 py-3 rounded-xl bg-white border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-navy-800">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label for="ppdb-alamat" class="block text-sm font-semibold text-navy-900 mb-1.5">Alamat Tempat Tinggal *</label>
+                                <textarea id="ppdb-alamat" rows="2" required placeholder="Desa / Kelurahan, Kecamatan, Kabupaten" class="w-full px-4 py-3 rounded-xl bg-white border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-navy-800"></textarea>
+                            </div>
+
+                            <div class="pt-2">
+                                <button type="submit" class="w-full flex items-center justify-center gap-2 bg-navy-900 hover:bg-navy-800 text-white font-bold py-4 px-6 rounded-xl shadow-md hover:shadow-lg transition-all">
+                                    <i data-lucide="send" class="w-5 h-5 text-amber-400"></i>
+                                    <span>Kirim Pendaftaran & Konfirmasi WhatsApp</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
 
-    <!-- FOOTER PUBLIK MURNI -->
-    <footer class="public-footer">
-        <div class="footer-container">
-            <p id="pub-footer-text">&copy; 2026 Portal Resmi Sekolah. Seluruh Hak Cipta Dilindungi.</p>
-            <span>Portal Informasi Publik & PPDB Sekolah</span>
+    <!-- ==================== 8. FOOTER LENGKAP ==================== -->
+    <footer id="kontak" class="bg-navy-950 text-slate-300 pt-16 pb-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-2 lg:grid-cols-12 gap-10 pb-12 border-b border-white/10">
+                <!-- Kolom 1: Identitas Sekolah -->
+                <div class="lg:col-span-4 space-y-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-11 h-11 rounded-xl bg-navy-800 flex items-center justify-center text-amber-400">
+                            <i data-lucide="anchor" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <span id="footer-school-top" class="font-heading font-extrabold text-lg text-white block leading-none">SMK CITRA BAHARI</span>
+                            <span id="footer-school-sub" class="text-xs font-semibold tracking-widest text-amber-400 uppercase mt-0.5 block">Wakatobi</span>
+                        </div>
+                    </div>
+                    <p class="text-sm text-slate-400 leading-relaxed">
+                        Lembaga pendidikan menengah kejuruan di Kabupaten Wakatobi yang berkomitmen mencetak lulusan terampil, berkarakter mulia, dan siap kerja maupun berwirausaha.
+                    </p>
+                    <div class="pt-2">
+                        <a id="footer-wa-btn" href="https://wa.me/6285298875399" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm px-4 py-2.5 rounded-xl transition-colors">
+                            <i data-lucide="message-circle" class="w-4 h-4"></i>
+                            <span>Chat Layanan Sekolah</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Kolom 2: Tautan Cepat -->
+                <div class="lg:col-span-2 space-y-3">
+                    <h4 class="font-heading font-bold text-white text-base">Navigasi</h4>
+                    <ul class="space-y-2.5 text-sm">
+                        <li><a href="#beranda" class="hover:text-amber-400 transition-colors">Beranda</a></li>
+                        <li><a href="#profil" class="hover:text-amber-400 transition-colors">Profil & Kalender</a></li>
+                        <li><a href="#jurusan" class="hover:text-amber-400 transition-colors">Kompetensi Keahlian</a></li>
+                        <li><a href="#guru" class="hover:text-amber-400 transition-colors">Direktori Pendidik</a></li>
+                        <li><a href="#berita" class="hover:text-amber-400 transition-colors">Berita & Kegiatan</a></li>
+                        <li><a href="#ppdb" class="hover:text-amber-400 transition-colors">PPDB Online</a></li>
+                    </ul>
+                </div>
+
+                <!-- Kolom 3: Jam Operasional -->
+                <div class="lg:col-span-3 space-y-3">
+                    <h4 class="font-heading font-bold text-white text-base">Jam Layanan Sekolah</h4>
+                    <ul class="space-y-2.5 text-sm text-slate-400">
+                        <li class="flex items-start gap-2.5">
+                            <i data-lucide="clock" class="w-4 h-4 text-amber-400 shrink-0 mt-1"></i>
+                            <div>
+                                <span class="text-white font-medium block">Senin – Kamis</span>
+                                <span>07.15 – 15.00 WITA</span>
+                            </div>
+                        </li>
+                        <li class="flex items-start gap-2.5">
+                            <i data-lucide="clock" class="w-4 h-4 text-amber-400 shrink-0 mt-1"></i>
+                            <div>
+                                <span class="text-white font-medium block">Jumat – Sabtu</span>
+                                <span>07.15 – 12.00 WITA</span>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Kolom 4: Kontak & Alamat -->
+                <div class="lg:col-span-3 space-y-3">
+                    <h4 class="font-heading font-bold text-white text-base">Hubungi Kami</h4>
+                    <ul class="space-y-3 text-sm text-slate-400">
+                        <li class="flex items-start gap-2.5">
+                            <i data-lucide="map-pin" class="w-4 h-4 text-amber-400 shrink-0 mt-1"></i>
+                            <span id="contact-alamat">Kabupaten Wakatobi, Sulawesi Tenggara</span>
+                        </li>
+                        <li class="flex items-center gap-2.5">
+                            <i data-lucide="phone" class="w-4 h-4 text-amber-400 shrink-0"></i>
+                            <span id="contact-wa-text">+6285298875399</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Copyright -->
+            <div class="pt-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-4">
+                <p id="pub-footer-text">&copy; 2026 SMK Citra Bahari Wakatobi. Hak Cipta Dilindungi Undang-Undang.</p>
+                <span>Portal Informasi Resmi Sekolah</span>
+            </div>
         </div>
     </footer>
 
     <!-- TOMBOL WHATSAPP MENGAMBANG -->
-    <a id="floating-wa-btn" href="https://wa.me/6285298875399" target="_blank" rel="noopener noreferrer" class="floating-wa" title="Hubungi Sekolah via WhatsApp">
-        <i class="ph-fill ph-whatsapp-logo"></i>
-        <span>Tanya Sekolah</span>
+    <a id="floating-wa-btn" href="https://wa.me/6285298875399" target="_blank" rel="noopener noreferrer" class="fixed bottom-5 right-5 z-40 inline-flex items-center gap-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm px-4 py-3.5 rounded-full shadow-xl transition-transform hover:scale-105" title="Hubungi Sekolah via WhatsApp">
+        <i data-lucide="message-circle" class="w-5 h-5"></i>
+        <span class="hidden sm:inline">Tanya Sekolah</span>
     </a>
 
-    <!-- MODAL BACA BERITA LENGKAP -->
-    <div id="modal-baca-berita" class="modal-backdrop hidden" onclick="if(event.target===this) closeModal('modal-baca-berita')">
-        <div class="modal-box modal-lg">
-            <div class="modal-header">
-                <span id="read-berita-kategori" class="badge badge-info">Kegiatan</span>
-                <button class="btn-close" onclick="closeModal('modal-baca-berita')">&times;</button>
+    <!-- ==================== MODAL 1: INFO & ALUR SINGKAT PPDB ==================== -->
+    <div id="ppdb-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-navy-950/75 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl border border-slate-200">
+            <div class="bg-navy-900 text-white px-6 py-5 flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <i data-lucide="sparkles" class="w-5 h-5 text-amber-400"></i>
+                    <h3 class="font-heading font-bold text-lg">Informasi Pendaftaran PPDB</h3>
+                </div>
+                <button onclick="closePpdbModal()" aria-label="Tutup Modal" class="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
             </div>
-            <h2 id="read-berita-judul" class="read-title">Judul Berita</h2>
-            <p id="read-berita-meta" class="text-muted text-sm mb-3">Tanggal • Penulis</p>
-            <img id="read-berita-img" src="" alt="Gambar Kegiatan" class="read-img hidden">
-            <div id="read-berita-isi" class="read-body"></div>
+
+            <div class="p-6 space-y-5 max-h-[85vh] overflow-y-auto">
+                <div class="p-4 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-950">
+                    <p class="font-bold text-amber-800 mb-1">Pendaftaran Online Telah Dibuka!</p>
+                    <p class="text-xs leading-relaxed">Calon peserta didik baru lulusan SMP/MTs dapat langsung mendaftar secara daring dan melakukan konfirmasi berkas melalui WhatsApp panitia.</p>
+                </div>
+
+                <div class="space-y-2 text-sm">
+                    <h4 class="font-heading font-bold text-navy-900">Persyaratan Dokumen Daftar Ulang:</h4>
+                    <ul class="text-slate-600 space-y-1.5 text-xs sm:text-sm">
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-600"></i> Fotokopi Surat Keterangan Lulus (SKL) / Ijazah SMP/MTs</li>
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-600"></i> Fotokopi Kartu Keluarga & Akta Kelahiran</li>
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-600"></i> Pas Foto Terbaru Ukuran 3x4 (4 Lembar)</li>
+                    </ul>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-2.5 pt-2">
+                    <button type="button" onclick="goToFullPpdbForm()" class="flex-1 bg-amber-500 hover:bg-amber-600 text-navy-950 font-bold text-sm py-3 px-4 rounded-xl transition-colors">
+                        Isi Formulir Pendaftaran
+                    </button>
+                    <a id="modal-wa-ppdb-btn" href="https://wa.me/6285298875399" target="_blank" rel="noopener noreferrer" class="flex-1 bg-navy-900 hover:bg-navy-800 text-white font-semibold text-sm py-3 px-4 rounded-xl text-center transition-colors">
+                        Chat Panitia PPDB
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- MODAL BUKTI PENDAFTARAN PPDB & KONFIRMASI WA -->
-    <div id="modal-sukses-ppdb" class="modal-backdrop hidden">
-        <div class="modal-box">
-            <div class="modal-header">
-                <span class="badge badge-success">Pendaftaran Berhasil Tercatat</span>
-                <button class="btn-close" onclick="closeModal('modal-sukses-ppdb')">&times;</button>
+    <!-- ==================== MODAL 2: DETAIL BERITA SEKOLAH ==================== -->
+    <div id="news-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-navy-950/75 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl max-w-2xl w-full overflow-hidden shadow-2xl border border-slate-200">
+            <div class="relative h-56 sm:h-64 bg-navy-900">
+                <img id="news-modal-img" src="" alt="Gambar Berita" class="w-full h-full object-cover">
+                <button onclick="closeNewsModal()" aria-label="Tutup Berita" class="absolute top-4 right-4 w-10 h-10 rounded-full bg-navy-950/70 text-white hover:bg-navy-950 flex items-center justify-center transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+                <span id="news-modal-category" class="absolute bottom-4 left-6 bg-amber-500 text-navy-950 text-xs font-bold px-3 py-1 rounded-full"></span>
             </div>
-            <div class="receipt-box">
-                <p class="text-muted text-sm">Nomor Pendaftaran Anda:</p>
-                <h2 id="bukti-no-ppdb" class="receipt-number">PPDB-2026-0000</h2>
-                <div class="kv-list" style="margin-top: 12px;">
-                    <div class="kv-row">
-                        <span class="kv-key">Nama Calon Siswa</span>
-                        <span class="kv-val" id="bukti-nama">-</span>
+            <div class="p-6 sm:p-8 max-h-[60vh] overflow-y-auto">
+                <div class="flex items-center gap-4 text-xs text-slate-500 mb-3">
+                    <span class="flex items-center gap-1"><i data-lucide="calendar" class="w-3.5 h-3.5"></i> <span id="news-modal-date"></span></span>
+                    <span class="flex items-center gap-1"><i data-lucide="user" class="w-3.5 h-3.5"></i> <span id="news-modal-author">Admin Sekolah</span></span>
+                </div>
+                <h3 id="news-modal-title" class="font-heading font-extrabold text-xl sm:text-2xl text-navy-900 mb-4 leading-snug"></h3>
+                <div id="news-modal-content" class="text-slate-600 text-sm sm:text-base leading-relaxed whitespace-pre-line"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL 3: BUKTI PENDAFTARAN PPDB & KONFIRMASI WA ==================== -->
+    <div id="modal-sukses-ppdb" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-navy-950/75 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl max-w-md w-full overflow-hidden shadow-2xl border border-slate-200 p-6">
+            <div class="flex items-center justify-between mb-4">
+                <span class="inline-flex items-center gap-1.5 bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full">
+                    <i data-lucide="check-circle" class="w-4 h-4"></i> Pendaftaran Tercatat
+                </span>
+                <button onclick="closeSuksesPpdbModal()" class="text-slate-400 hover:text-slate-700">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="bg-slate-50 border-2 border-dashed border-navy-900/30 rounded-2xl p-5 text-center">
+                <p class="text-xs text-slate-500 font-medium">Nomor Pendaftaran Anda:</p>
+                <h2 id="bukti-no-ppdb" class="font-heading font-extrabold text-2xl text-navy-900 tracking-wider mt-1">PPDB-2026-0000</h2>
+                <div class="mt-4 space-y-2 text-left text-xs sm:text-sm border-t border-slate-200 pt-3">
+                    <div class="flex justify-between gap-2">
+                        <span class="text-slate-500">Nama Siswa:</span>
+                        <span id="bukti-nama" class="font-bold text-navy-900 text-right">-</span>
                     </div>
-                    <div class="kv-row">
-                        <span class="kv-key">Asal Sekolah</span>
-                        <span class="kv-val" id="bukti-asal">-</span>
+                    <div class="flex justify-between gap-2">
+                        <span class="text-slate-500">Asal Sekolah:</span>
+                        <span id="bukti-asal" class="font-semibold text-slate-700 text-right">-</span>
                     </div>
-                    <div class="kv-row">
-                        <span class="kv-key">Pilihan Jurusan 1</span>
-                        <span class="kv-val" id="bukti-jurusan">-</span>
+                    <div class="flex justify-between gap-2">
+                        <span class="text-slate-500">Jurusan Pilihan 1:</span>
+                        <span id="bukti-jurusan" class="font-bold text-amber-700 text-right">-</span>
                     </div>
                 </div>
             </div>
-            <p class="text-muted text-sm" style="margin: 14px 0;">
-                Klik tombol di bawah ini untuk mengirim bukti pendaftaran langsung ke <strong>WhatsApp Panitia PPDB</strong> agar segera diverifikasi.
+
+            <p class="text-xs text-slate-600 my-4 leading-relaxed">
+                Simpan nomor pendaftaran di atas, lalu klik tombol di bawah untuk mengirim konfirmasi langsung ke <strong>WhatsApp Panitia PPDB</strong>.
             </p>
-            <a id="btn-konfirmasi-wa-ppdb" href="#" target="_blank" rel="noopener noreferrer" class="btn-wa-large btn-block" style="justify-content: center;">
-                <i class="ph-fill ph-whatsapp-logo"></i> Konfirmasi ke WhatsApp Panitia
+
+            <a id="btn-konfirmasi-wa-ppdb" href="#" target="_blank" rel="noopener noreferrer" class="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm py-3.5 px-5 rounded-xl shadow-md transition-colors">
+                <i data-lucide="message-circle" class="w-5 h-5"></i>
+                <span>Konfirmasi ke WhatsApp Panitia</span>
             </a>
         </div>
     </div>
