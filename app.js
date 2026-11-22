@@ -1,6 +1,7 @@
 let cacheBerita = [];
 let cacheGuruPublik = [];
 let activeKategoriBerita = 'Semua';
+let sekolahSettings = {};
 
 document.addEventListener('DOMContentLoaded', async () => {
     if ('serviceWorker' in navigator) {
@@ -17,43 +18,78 @@ function closeMobileNav() {
     document.getElementById('nav-links').classList.remove('open');
 }
 
+function showLoader(text = 'Memproses...') {
+    const el = document.getElementById('global-loader');
+    if (el) {
+        document.getElementById('loader-text').textContent = text;
+        el.classList.remove('hidden');
+    }
+}
+
+function hideLoader() {
+    const el = document.getElementById('global-loader');
+    if (el) el.classList.add('hidden');
+}
+
+function showToast(msg, type = 'info') {
+    const c = document.getElementById('toast-container');
+    if (!c) return;
+    const t = document.createElement('div');
+    t.className = `toast ${type}`;
+    t.textContent = msg;
+    c.appendChild(t);
+    setTimeout(() => t.remove(), 3500);
+}
+
 function closeModal(id) {
     document.getElementById(id).classList.add('hidden');
 }
 
+function formatWaNumber(raw) {
+    const cleaned = (raw || '6285298875399').replace(/[^0-9]/g, '');
+    return cleaned.startsWith('0') ? '62' + cleaned.slice(1) : cleaned;
+}
+
 async function loadAllPublicContent() {
     try {
-        const [resPengaturan, resSiswa, resGuru, resMapel, resLibur] = await Promise.all([
+        const [resPengaturan, resSiswa, resGuru, resMapel, resLibur, resPpdbCount] = await Promise.all([
             db.from('pengaturan').select('*'),
             db.from('siswa').select('ID_SISWA, KELAS, STATUS'),
             db.from('guru').select('nama_guru, jabatan, mapel_diampu, status_kepegawaian, status').order('nama_guru', { ascending: true }),
             db.from('mapel').select('id'),
-            db.from('hari_libur').select('*').order('TANGGAL', { ascending: true })
+            db.from('hari_libur').select('*').order('TANGGAL', { ascending: true }),
+            db.from('pendaftar_ppdb').select('id', { count: 'exact', head: true })
         ]);
 
         // 1. Identitas & WhatsApp Sekolah
-        const settings = {};
-        (resPengaturan.data || []).forEach(p => { settings[p.kunci] = p.nilai; });
+        sekolahSettings = {};
+        (resPengaturan.data || []).forEach(p => { sekolahSettings[p.kunci] = p.nilai; });
 
-        const namaSekolah = settings['nama_sekolah'] || settings['NAMA_SEKOLAH'] || 'Portal Resmi Sekolah';
-        const alamatSekolah = settings['alamat_sekolah'] || settings['ALAMAT_SEKOLAH'] || 'Indonesia';
-        const waRaw = (settings['wa_sekolah'] || '6285298875399').replace(/[^0-9]/g, '');
-        const waNumber = waRaw.startsWith('0') ? '62' + waRaw.slice(1) : waRaw;
+        const namaSekolah = sekolahSettings['nama_sekolah'] || sekolahSettings['NAMA_SEKOLAH'] || 'Portal Resmi Sekolah';
+        const alamatSekolah = sekolahSettings['alamat_sekolah'] || sekolahSettings['ALAMAT_SEKOLAH'] || 'Indonesia';
+        const tahunAjaranPPDB = sekolahSettings['tahun_ajaran_ppdb'] || '2026/2027';
+        const waNumber = formatWaNumber(sekolahSettings['wa_sekolah']);
         const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent('Halo Admin ' + namaSekolah + ', saya ingin menanyakan informasi sekolah.')}`;
 
         document.title = namaSekolah;
         document.getElementById('pub-nav-title').textContent = namaSekolah;
         document.getElementById('pub-hero-title').textContent = `Selamat Datang di ${namaSekolah}`;
+        document.getElementById('hero-ppdb-pill').textContent = `PPDB Tahun Ajaran ${tahunAjaranPPDB} Dibuka`;
+        document.getElementById('ppdb-ta-badge').textContent = `PPDB Tahun Ajaran ${tahunAjaranPPDB}`;
         document.getElementById('pub-footer-text').textContent = `© ${new Date().getFullYear()} ${namaSekolah}. Seluruh Hak Cipta Dilindungi.`;
         document.getElementById('contact-alamat').textContent = alamatSekolah;
         document.getElementById('contact-wa-text').textContent = `+${waNumber}`;
+
+        if (resPpdbCount && typeof resPpdbCount.count === 'number') {
+            document.getElementById('ppdb-total-pendaftar').textContent = resPpdbCount.count;
+        }
 
         ['hero-wa-btn', 'section-wa-btn', 'floating-wa-btn'].forEach(btnId => {
             const el = document.getElementById(btnId);
             if (el) el.href = waLink;
         });
 
-        // Render Identitas Sekolah (kecuali kunci teknis & kunci deskripsi jurusan_)
+        // Render Identitas Sekolah
         const idList = document.getElementById('pub-identitas-list');
         const publicSettings = (resPengaturan.data || []).filter(p =>
             !p.kunci.toLowerCase().includes('password') &&
@@ -80,8 +116,8 @@ async function loadAllPublicContent() {
         document.getElementById('pub-stat-mapel').textContent = (resMapel.data || []).length;
         document.getElementById('pub-stat-kelas').textContent = rombelCount;
 
-        // 3. Kompetensi Keahlian (Jurusan)
-        renderKompetensiKeahlian(siswaAktif, settings);
+        // 3. Kompetensi Keahlian (Jurusan) + Isi Dropdown Pilihan Jurusan di Form PPDB
+        renderKompetensiKeahlian(siswaAktif, sekolahSettings);
 
         // 4. Direktori Pendidik
         cacheGuruPublik = guruAktif;
@@ -109,7 +145,6 @@ async function loadAllPublicContent() {
 // ================= KOMPETENSI KEAHLIAN (JURUSAN) =================
 function extractNamaJurusan(kelasStr) {
     if (!kelasStr) return 'Umum';
-    // Hapus awalan tingkat kelas (X, XI, XII, 10, 11, 12) dan akhiran nomor rombel (1, 2, A, B)
     let cleaned = kelasStr.trim()
         .replace(/^(XII|XI|X|12|11|10)\s+/i, '')
         .replace(/\s+[0-9A-D]$/i, '')
@@ -166,7 +201,6 @@ function getMetadataJurusan(kodeJurusan, settings) {
         }
     };
 
-    // Cari kecocokan di kamus
     for (const [k, info] of Object.entries(kamusSMK)) {
         if (keyUpper.includes(k)) {
             return {
@@ -188,7 +222,8 @@ function getMetadataJurusan(kodeJurusan, settings) {
 
 function renderKompetensiKeahlian(siswaAktif, settings) {
     const grid = document.getElementById('jurusan-grid');
-    if (!grid) return;
+    const sel1 = document.getElementById('ppdb-jurusan-1');
+    const sel2 = document.getElementById('ppdb-jurusan-2');
 
     const mapJurusan = {};
     siswaAktif.forEach(s => {
@@ -202,6 +237,24 @@ function renderKompetensiKeahlian(siswaAktif, settings) {
     });
 
     const daftarJurusan = Object.entries(mapJurusan);
+
+    // Isi pilihan dropdown jurusan pada Formulir PPDB
+    const opsiJurusan = daftarJurusan.length > 0
+        ? daftarJurusan.map(([kode]) => {
+            const meta = getMetadataJurusan(kode, settings);
+            return `<option value="${meta.nama}">${meta.nama}</option>`;
+        }).join('')
+        : `
+            <option value="Teknik Komputer dan Jaringan (TKJ)">Teknik Komputer dan Jaringan (TKJ)</option>
+            <option value="Perhotelan">Perhotelan</option>
+            <option value="Nautika Kapal Penangkap Ikan (NKPI)">Nautika Kapal Penangkap Ikan (NKPI)</option>
+            <option value="Agribisnis Pengolahan Hasil Perikanan (APHP)">Agribisnis Pengolahan Hasil Perikanan (APHP)</option>
+        `;
+
+    if (sel1) sel1.innerHTML = '<option value="">-- Pilih Jurusan Utama --</option>' + opsiJurusan;
+    if (sel2) sel2.innerHTML = '<option value="">-- Opsional / Jurusan Cadangan --</option>' + opsiJurusan;
+
+    if (!grid) return;
     if (daftarJurusan.length === 0) {
         grid.innerHTML = '<div class="section-card"><p class="text-muted text-sm">Data kompetensi keahlian akan tampil otomatis setelah data kelas siswa tersedia.</p></div>';
         return;
@@ -228,6 +281,119 @@ function renderKompetensiKeahlian(siswaAktif, settings) {
             </article>
         `;
     }).join('');
+}
+
+// ================= FORMULIR PPDB ONLINE & KONFIRMASI WA =================
+async function submitFormPPDB(event) {
+    event.preventDefault();
+
+    const tahun = new Date().getFullYear();
+    const random4 = Math.floor(1000 + Math.random() * 9000);
+    const noPendaftaran = `PPDB-${tahun}-${random4}`;
+
+    const payload = {
+        no_pendaftaran: noPendaftaran,
+        nama_lengkap: document.getElementById('ppdb-nama').value.trim(),
+        nisn: document.getElementById('ppdb-nisn').value.trim() || null,
+        jenis_kelamin: document.getElementById('ppdb-jk').value,
+        tempat_lahir: document.getElementById('ppdb-tempat-lahir').value.trim(),
+        tanggal_lahir: document.getElementById('ppdb-tanggal-lahir').value,
+        asal_sekolah: document.getElementById('ppdb-asal-sekolah').value.trim(),
+        pilihan_jurusan_1: document.getElementById('ppdb-jurusan-1').value,
+        pilihan_jurusan_2: document.getElementById('ppdb-jurusan-2').value || null,
+        no_wa_siswa: document.getElementById('ppdb-wa').value.trim(),
+        nama_orang_tua: document.getElementById('ppdb-ortu').value.trim(),
+        alamat: document.getElementById('ppdb-alamat').value.trim(),
+        status_pendaftaran: 'Menunggu Verifikasi'
+    };
+
+    showLoader('Mengirim formulir pendaftaran PPDB...');
+    try {
+        const { error } = await db.from('pendaftar_ppdb').insert([payload]);
+        if (error) throw error;
+
+        // Siapkan pesan konfirmasi otomatis untuk WhatsApp Panitia PPDB
+        const namaSekolah = sekolahSettings['nama_sekolah'] || 'Panitia PPDB Sekolah';
+        const waPanitia = formatWaNumber(sekolahSettings['wa_ppdb'] || sekolahSettings['wa_sekolah']);
+
+        const pesanWA = [
+            `Halo Panitia PPDB *${namaSekolah}*,`,
+            `Saya telah melakukan pendaftaran PPDB Online dengan rincian:`,
+            ``,
+            `• *No. Pendaftaran:* ${payload.no_pendaftaran}`,
+            `• *Nama Lengkap:* ${payload.nama_lengkap}`,
+            `• *NISN:* ${payload.nisn || '-'}`,
+            `• *Asal Sekolah:* ${payload.asal_sekolah}`,
+            `• *Pilihan Jurusan 1:* ${payload.pilihan_jurusan_1}`,
+            `• *Pilihan Jurusan 2:* ${payload.pilihan_jurusan_2 || '-'}`,
+            `• *Nama Orang Tua:* ${payload.nama_orang_tua}`,
+            ``,
+            `Mohon informasi langkah verifikasi berkas selanjutnya. Terima kasih.`
+        ].join('\n');
+
+        const waConfirmUrl = `https://wa.me/${waPanitia}?text=${encodeURIComponent(pesanWA)}`;
+
+        // Tampilkan Modal Bukti Pendaftaran
+        document.getElementById('bukti-no-ppdb').textContent = payload.no_pendaftaran;
+        document.getElementById('bukti-nama').textContent = payload.nama_lengkap;
+        document.getElementById('bukti-asal').textContent = payload.asal_sekolah;
+        document.getElementById('bukti-jurusan').textContent = payload.pilihan_jurusan_1;
+        document.getElementById('btn-konfirmasi-wa-ppdb').href = waConfirmUrl;
+
+        document.getElementById('modal-sukses-ppdb').classList.remove('hidden');
+        event.target.reset();
+
+        // Tambah angka counter pendaftar di layar
+        const counterEl = document.getElementById('ppdb-total-pendaftar');
+        counterEl.textContent = (parseInt(counterEl.textContent, 10) || 0) + 1;
+
+        showToast('Pendaftaran berhasil! Silakan konfirmasi via WhatsApp.', 'success');
+    } catch (err) {
+        showToast('Gagal mengirim pendaftaran: ' + err.message, 'error');
+    } finally {
+        hideLoader();
+    }
+}
+
+async function cekStatusPPDB() {
+    const keyword = document.getElementById('cek-ppdb-keyword').value.trim();
+    const box = document.getElementById('hasil-cek-ppdb');
+    if (!keyword) {
+        showToast('Masukkan Nomor Pendaftaran atau NISN terlebih dahulu.', 'error');
+        return;
+    }
+
+    box.classList.remove('hidden');
+    box.innerHTML = '<p class="text-muted text-sm">Mencari data pendaftaran...</p>';
+
+    try {
+        const { data, error } = await db
+            .from('pendaftar_ppdb')
+            .select('no_pendaftaran, nama_lengkap, asal_sekolah, pilihan_jurusan_1, status_pendaftaran')
+            .or(`no_pendaftaran.ilike.${keyword},nisn.eq.${keyword}`)
+            .maybeSingle();
+
+        if (error) throw error;
+        if (!data) {
+            box.innerHTML = '<p class="text-sm" style="color: var(--danger);">Data tidak ditemukan. Pastikan Nomor Pendaftaran atau NISN sudah benar.</p>';
+            return;
+        }
+
+        const badgeClass = data.status_pendaftaran.toLowerCase().includes('terima') || data.status_pendaftaran.toLowerCase().includes('verifikasi selesai')
+            ? 'badge-success'
+            : 'badge-warning';
+
+        box.innerHTML = `
+            <div style="margin-bottom: 6px;">
+                <strong>${data.nama_lengkap}</strong>
+                <div class="text-muted text-sm">${data.no_pendaftaran} • ${data.asal_sekolah}</div>
+            </div>
+            <div class="text-sm" style="margin-bottom: 6px;">Jurusan: <strong>${data.pilihan_jurusan_1}</strong></div>
+            <span class="badge ${badgeClass}">${data.status_pendaftaran}</span>
+        `;
+    } catch (err) {
+        box.innerHTML = `<p class="text-sm" style="color: var(--danger);">Gagal mengecek status: ${err.message}</p>`;
+    }
 }
 
 // ================= BERITA & KEGIATAN =================
