@@ -53,8 +53,14 @@ async function loadAllPublicContent() {
             if (el) el.href = waLink;
         });
 
+        // Render Identitas Sekolah (kecuali kunci teknis & kunci deskripsi jurusan_)
         const idList = document.getElementById('pub-identitas-list');
-        const publicSettings = (resPengaturan.data || []).filter(p => !p.kunci.toLowerCase().includes('password') && !p.kunci.toLowerCase().includes('token'));
+        const publicSettings = (resPengaturan.data || []).filter(p =>
+            !p.kunci.toLowerCase().includes('password') &&
+            !p.kunci.toLowerCase().includes('token') &&
+            !p.kunci.toLowerCase().startsWith('jurusan_')
+        );
+
         idList.innerHTML = publicSettings.length
             ? publicSettings.map(p => `
                 <div class="kv-row">
@@ -74,11 +80,14 @@ async function loadAllPublicContent() {
         document.getElementById('pub-stat-mapel').textContent = (resMapel.data || []).length;
         document.getElementById('pub-stat-kelas').textContent = rombelCount;
 
-        // 3. Direktori Pendidik
+        // 3. Kompetensi Keahlian (Jurusan)
+        renderKompetensiKeahlian(siswaAktif, settings);
+
+        // 4. Direktori Pendidik
         cacheGuruPublik = guruAktif;
         renderPublikGuru();
 
-        // 4. Kalender Libur
+        // 5. Kalender Libur
         const liburList = resLibur.data || [];
         document.getElementById('pub-libur-list').innerHTML = liburList.length
             ? liburList.map(l => `
@@ -89,7 +98,7 @@ async function loadAllPublicContent() {
             `).join('')
             : '<p class="text-muted text-sm">Belum ada jadwal hari libur tercatat.</p>';
 
-        // 5. Berita & Kegiatan
+        // 6. Berita & Kegiatan
         await loadBeritaSekolah();
 
     } catch (err) {
@@ -97,6 +106,131 @@ async function loadAllPublicContent() {
     }
 }
 
+// ================= KOMPETENSI KEAHLIAN (JURUSAN) =================
+function extractNamaJurusan(kelasStr) {
+    if (!kelasStr) return 'Umum';
+    // Hapus awalan tingkat kelas (X, XI, XII, 10, 11, 12) dan akhiran nomor rombel (1, 2, A, B)
+    let cleaned = kelasStr.trim()
+        .replace(/^(XII|XI|X|12|11|10)\s+/i, '')
+        .replace(/\s+[0-9A-D]$/i, '')
+        .trim();
+    return cleaned || kelasStr.trim();
+}
+
+function getMetadataJurusan(kodeJurusan, settings) {
+    const keyUpper = kodeJurusan.toUpperCase();
+    const customDesc = settings[`jurusan_${kodeJurusan}`] || settings[`jurusan_${keyUpper}`];
+
+    const kamusSMK = {
+        'TKJ': {
+            nama: 'Teknik Komputer dan Jaringan (TKJ)',
+            icon: 'ph-fill ph-network',
+            warna: 'blue',
+            deskripsi: 'Mempelajari instalasi jaringan komputer, administrasi server, routing & switching MikroTik, fiber optik, serta keamanan jaringan.'
+        },
+        'TJKT': {
+            nama: 'Teknik Jaringan Komputer dan Telekomunikasi (TJKT)',
+            icon: 'ph-fill ph-network',
+            warna: 'blue',
+            deskripsi: 'Kompetensi keahlian di bidang infrastruktur jaringan komputer, sistem telekomunikasi modern, cloud computing, dan manajemen perangkat jaringan.'
+        },
+        'RPL': {
+            nama: 'Rekayasa Perangkat Lunak (RPL)',
+            icon: 'ph-fill ph-code',
+            warna: 'teal',
+            deskripsi: 'Fokus pada pemrograman aplikasi web, mobile, perancangan basis data, dan pengembangan sistem perangkat lunak.'
+        },
+        'PERHOTELAN': {
+            nama: 'Perhotelan',
+            icon: 'ph-fill ph-buildings',
+            warna: 'orange',
+            deskripsi: 'Membekali peserta didik dengan keterampilan layanan front office, housekeeping, tata boga dasar, dan manajemen keramahtamahan pariwisata.'
+        },
+        'APHP': {
+            nama: 'Agribisnis Pengolahan Hasil Perikanan (APHP)',
+            icon: 'ph-fill ph-fish',
+            warna: 'teal',
+            deskripsi: 'Mengembangkan kompetensi pengolahan hasil perikanan dan kelautan modern, pengendalian mutu pangan, serta kewirausahaan bahari.'
+        },
+        'NKPI': {
+            nama: 'Nautika Kapal Penangkap Ikan (NKPI)',
+            icon: 'ph-fill ph-anchor',
+            warna: 'blue',
+            deskripsi: 'Pendidikan vokasi kemaritiman di bidang navigasi pelayaran, teknik penangkapan ikan, dan keselamatan operasional kapal.'
+        },
+        'TKPI': {
+            nama: 'Teknika Kapal Penangkap Ikan (TKPI)',
+            icon: 'ph-fill ph-gear-six',
+            warna: 'orange',
+            deskripsi: 'Kompetensi keahlian permesinan kapal, perawatan motor diesel maritim, dan sistem kelistrikan perkapalan.'
+        }
+    };
+
+    // Cari kecocokan di kamus
+    for (const [k, info] of Object.entries(kamusSMK)) {
+        if (keyUpper.includes(k)) {
+            return {
+                nama: info.nama,
+                icon: info.icon,
+                warna: info.warna,
+                deskripsi: customDesc || info.deskripsi
+            };
+        }
+    }
+
+    return {
+        nama: kodeJurusan,
+        icon: 'ph-fill ph-graduation-cap',
+        warna: 'green',
+        deskripsi: customDesc || `Program kompetensi keahlian ${kodeJurusan} dengan pembelajaran berbasis praktik industri dan kewirausahaan.`
+    };
+}
+
+function renderKompetensiKeahlian(siswaAktif, settings) {
+    const grid = document.getElementById('jurusan-grid');
+    if (!grid) return;
+
+    const mapJurusan = {};
+    siswaAktif.forEach(s => {
+        if (!s.KELAS) return;
+        const namaJur = extractNamaJurusan(s.KELAS);
+        if (!mapJurusan[namaJur]) {
+            mapJurusan[namaJur] = { siswaCount: 0, rombelSet: new Set() };
+        }
+        mapJurusan[namaJur].siswaCount += 1;
+        mapJurusan[namaJur].rombelSet.add(s.KELAS.trim());
+    });
+
+    const daftarJurusan = Object.entries(mapJurusan);
+    if (daftarJurusan.length === 0) {
+        grid.innerHTML = '<div class="section-card"><p class="text-muted text-sm">Data kompetensi keahlian akan tampil otomatis setelah data kelas siswa tersedia.</p></div>';
+        return;
+    }
+
+    grid.innerHTML = daftarJurusan.map(([kode, stats]) => {
+        const meta = getMetadataJurusan(kode, settings);
+        return `
+            <article class="jurusan-card border-${meta.warna}">
+                <div class="jurusan-top">
+                    <div class="jurusan-icon bg-soft-${meta.warna}">
+                        <i class="${meta.icon}"></i>
+                    </div>
+                    <div class="jurusan-badges">
+                        <span class="badge badge-info">${stats.rombelSet.size} Rombel</span>
+                        <span class="badge badge-success">${stats.siswaCount} Siswa</span>
+                    </div>
+                </div>
+                <h4 class="jurusan-title">${meta.nama}</h4>
+                <p class="jurusan-desc">${meta.deskripsi}</p>
+                <div class="jurusan-rombel-list">
+                    ${[...stats.rombelSet].sort().map(r => `<span class="rombel-tag">${r}</span>`).join('')}
+                </div>
+            </article>
+        `;
+    }).join('');
+}
+
+// ================= BERITA & KEGIATAN =================
 async function loadBeritaSekolah() {
     const grid = document.getElementById('berita-grid');
     try {
